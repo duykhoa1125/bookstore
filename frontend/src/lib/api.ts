@@ -312,7 +312,7 @@ class ApiClient {
     id: string,
     status: "PENDING" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED"
   ): Promise<ApiResponse<Order>> {
-    const response = await this.client.patch(`/orders/${id}/confirm`, {
+    const response = await this.client.patch(`/orders/${id}/status`, {
       status,
     });
     return response.data;
