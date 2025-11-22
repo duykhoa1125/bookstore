@@ -1,0 +1,234 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String
+  email     String   @unique
+  fullName  String   @map("full_name")
+  
+  phone     String?  
+  address   String?
+  
+  position  String? 
+
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cart            Cart?
+  orders          Order[]        @relation("UserOrders") 
+  confirmedOrders Order[]        @relation("AdminConfirmedOrders") 
+  ratings         Rating[]
+
+  @@map("users")
+}
+
+model Category {
+  id               String   @id @default(cuid())
+  name             String
+  parentCategoryId String?  @map("parent_category_id")
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  parentCategory Category?  @relation("CategoryToCategory", fields: [parentCategoryId], references: [id])
+  subCategories  Category[] @relation("CategoryToCategory")
+  books          Book[]
+
+  @@map("categories")
+}
+
+model Publisher {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  books     Book[]
+
+  @@map("publishers")
+}
+
+model Author {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  books     BookAuthor[]
+
+  @@map("authors")
+}
+
+model Book {
+  id          String   @id @default(cuid())
+  title       String
+  price       Float
+  stock       Int      @default(0) 
+  description String?  
+  imageUrl    String?  @map("image_url")
+  
+  publisherId String   @map("publisher_id")
+  categoryId  String   @map("category_id")
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  publisher   Publisher    @relation(fields: [publisherId], references: [id])
+  category    Category     @relation(fields: [categoryId], references: [id])
+  authors     BookAuthor[] 
+  ratings     Rating[]
+  cartItems   CartItem[]
+  orderItems  OrderItem[]
+
+  @@map("books")
+}
+
+// Bảng trung gian cho quan hệ N-N giữa Sách và Tác giả
+model BookAuthor {
+  bookId   String @map("book_id")
+  authorId String @map("author_id")
+
+  book   Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  author Author @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@id([bookId, authorId])
+  @@map("book_authors")
+}
+
+model Cart {
+  id        String   @id @default(cuid())
+  userId    String   @unique @map("user_id")
+  total     Float    @default(0) 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+
+  @@map("carts")
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  cartId    String   @map("cart_id")
+  bookId    String   @map("book_id")
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  book      Book     @relation(fields: [bookId], references: [id])
+
+  @@unique([cartId, bookId])
+  @@map("cart_items")
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  userId          String      @map("user_id") 
+  confirmedById   String?     @map("confirmed_by_id") 
+  
+  orderDate       DateTime    @default(now()) @map("order_date")
+  total           Float
+  status          OrderStatus @default(PENDING)
+  shippingAddress String      @map("shipping_address") 
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  user            User        @relation("UserOrders", fields: [userId], references: [id])
+  confirmedBy     User?       @relation("AdminConfirmedOrders", fields: [confirmedById], references: [id]) // Relation tới Admin
+  
+  items           OrderItem[] // Khớp ERD: Bao gồm (Sách)
+  payment         Payment?
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  orderId   String   @map("order_id")
+  bookId    String   @map("book_id")
+  quantity  Int      
+  price     Float    
+  createdAt DateTime @default(now())
+
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  book      Book     @relation(fields: [bookId], references: [id])
+
+  @@map("order_items")
+}
+
+model PaymentMethod {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  payments  Payment[]
+
+  @@map("payment_methods")
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  orderId         String        @unique @map("order_id")
+  paymentMethodId String        @map("payment_method_id")
+  
+  status          PaymentStatus @default(PENDING)
+  total           Float         
+  paymentDate     DateTime?     @map("payment_date") 
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  order           Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  paymentMethod   PaymentMethod @relation(fields: [paymentMethodId], references: [id])
+
+  @@map("payments")
+}
+
+model Rating {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id") 
+  bookId    String   @map("book_id") 
+  stars     Int      
+  content   String?  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bookId])
+  @@map("ratings")
+}
