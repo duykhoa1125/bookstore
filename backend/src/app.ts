@@ -1,7 +1,7 @@
 import express, { Application } from "express";
 import cors from "cors";
 import helmet from "helmet";
-import rateLimit from "express-rate-limit";
+
 import { ENV } from "./config/env";
 import { ErrorMiddleware } from "./middleware/error.middleware";
 import { ResponseUtil } from "./utils/response.util";
@@ -37,14 +37,7 @@ app.use(
   })
 );
 
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: ENV.NODE_ENV === "development" ? 1000 : 100,
-  message: "Too many requests from this IP, please try again later.",
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-app.use("/api", limiter);
+
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

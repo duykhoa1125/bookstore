@@ -261,7 +261,6 @@ class ApiClient {
   // Admin endpoints - Authors
   async createAuthor(data: {
     name: string;
-    bio?: string;
   }): Promise<ApiResponse<Author>> {
     const response = await this.client.post("/authors", data);
     return response.data;
@@ -271,7 +270,6 @@ class ApiClient {
     id: string,
     data: Partial<{
       name: string;
-      bio: string;
     }>
   ): Promise<ApiResponse<Author>> {
     const response = await this.client.patch(`/authors/${id}`, data);
@@ -286,9 +284,6 @@ class ApiClient {
   // Admin endpoints - Publishers
   async createPublisher(data: {
     name: string;
-    address?: string;
-    phone?: string;
-    email?: string;
   }): Promise<ApiResponse<Publisher>> {
     const response = await this.client.post("/publishers", data);
     return response.data;
@@ -298,9 +293,6 @@ class ApiClient {
     id: string,
     data: Partial<{
       name: string;
-      address: string;
-      phone: string;
-      email: string;
     }>
   ): Promise<ApiResponse<Publisher>> {
     const response = await this.client.patch(`/publishers/${id}`, data);

@@ -45,9 +45,6 @@ export interface Category {
 export interface Publisher {
   id: string;
   name: string;
-  address?: string;
-  phone?: string;
-  email?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -55,10 +52,8 @@ export interface Publisher {
 export interface Author {
   id: string;
   name: string;
-  bio?: string;
   createdAt: string;
   updatedAt: string;
-  book: Book;
 }
 
 export interface Rating {
