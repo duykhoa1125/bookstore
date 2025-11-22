@@ -58,10 +58,10 @@ export class BookService {
       const ratingsData = await prisma.$queryRaw<
         Array<{ bookId: string; averageRating: number }>
       >`
-        SELECT "bookId", AVG(stars)::float as "averageRating"
-        FROM "Rating"
-        WHERE "bookId" = ANY(${bookIds})
-        GROUP BY "bookId"
+        SELECT "book_id" as "bookId", AVG(stars)::float as "averageRating"
+        FROM "ratings"
+        WHERE "book_id" = ANY(${bookIds})
+        GROUP BY "book_id"
       `;
 
       // Create a map for quick lookup
