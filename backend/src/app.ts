@@ -22,7 +22,7 @@ const app: Application = express();
 app.use(helmet());
 app.use(
   cors({
-    origin: (origin, callback) => {
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
       if (!origin) return callback(null, true);
       
       const allowedOrigins = ENV.CORS_ALLOWED_ORIGINS;
