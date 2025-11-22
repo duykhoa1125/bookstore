@@ -354,8 +354,6 @@ class ApiClient {
   // Admin endpoints - Payment Methods
   async createPaymentMethod(data: {
     name: string;
-    description?: string;
-    isActive?: boolean;
   }): Promise<ApiResponse<PaymentMethod>> {
     const response = await this.client.post("/payment-methods", data);
     return response.data;
@@ -365,8 +363,6 @@ class ApiClient {
     id: string,
     data: Partial<{
       name: string;
-      description: string;
-      isActive: boolean;
     }>
   ): Promise<ApiResponse<PaymentMethod>> {
     const response = await this.client.patch(`/payment-methods/${id}`, data);

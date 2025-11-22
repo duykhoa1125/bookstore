@@ -1,14 +1,14 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
-import { Plus, Edit, Trash2, CreditCard, CheckCircle, XCircle } from 'lucide-react'
+import { Plus, Edit, Trash2, CreditCard } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function AdminPaymentMethods() {
   const queryClient = useQueryClient()
   const [showCreateModal, setShowCreateModal] = useState(false)
-  const [editingMethod, setEditingMethod] = useState<{ id: string; name: string; description?: string; isActive: boolean } | null>(null)
-  const [formData, setFormData] = useState({ name: '', description: '', isActive: true })
+  const [editingMethod, setEditingMethod] = useState<{ id: string; name: string } | null>(null)
+  const [formData, setFormData] = useState({ name: '' })
 
   const { data: methodsData, isLoading } = useQuery({
     queryKey: ['payment-methods'],
@@ -22,7 +22,7 @@ export default function AdminPaymentMethods() {
       queryClient.invalidateQueries({ queryKey: ['payment-methods'] })
       toast.success('Payment method created successfully')
       setShowCreateModal(false)
-      setFormData({ name: '', description: '', isActive: true })
+      setFormData({ name: '' })
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to create payment method')
@@ -35,7 +35,7 @@ export default function AdminPaymentMethods() {
       queryClient.invalidateQueries({ queryKey: ['payment-methods'] })
       toast.success('Payment method updated successfully')
       setEditingMethod(null)
-      setFormData({ name: '', description: '', isActive: true })
+      setFormData({ name: '' })
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to update payment method')
@@ -59,8 +59,6 @@ export default function AdminPaymentMethods() {
     e.preventDefault()
     const data = {
       name: formData.name,
-      description: formData.description || undefined,
-      isActive: formData.isActive,
     }
 
     if (editingMethod) {
@@ -74,13 +72,9 @@ export default function AdminPaymentMethods() {
     setEditingMethod({ 
       id: method.id, 
       name: method.name, 
-      description: method.description,
-      isActive: method.isActive 
     })
     setFormData({
       name: method.name,
-      description: method.description || '',
-      isActive: method.isActive,
     })
     setShowCreateModal(true)
   }
@@ -91,12 +85,7 @@ export default function AdminPaymentMethods() {
     }
   }
 
-  const toggleActive = (method: any) => {
-    updateMutation.mutate({ 
-      id: method.id, 
-      data: { isActive: !method.isActive } 
-    })
-  }
+
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -106,7 +95,7 @@ export default function AdminPaymentMethods() {
           onClick={() => {
             setShowCreateModal(true)
             setEditingMethod(null)
-            setFormData({ name: '', description: '', isActive: true })
+            setFormData({ name: '' })
           }}
           className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition flex items-center space-x-2"
         >
@@ -134,37 +123,13 @@ export default function AdminPaymentMethods() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">Description</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="Optional description"
-                  rows={3}
-                />
-              </div>
-
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="isActive"
-                  checked={formData.isActive}
-                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                />
-                <label htmlFor="isActive" className="ml-2 text-sm font-medium">
-                  Active (available for customers)
-                </label>
-              </div>
-
               <div className="flex space-x-4">
                 <button
                   type="button"
                   onClick={() => {
                     setShowCreateModal(false)
                     setEditingMethod(null)
-                    setFormData({ name: '', description: '', isActive: true })
+                    setFormData({ name: '' })
                   }}
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
@@ -195,12 +160,6 @@ export default function AdminPaymentMethods() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Method
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Description
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
@@ -214,32 +173,6 @@ export default function AdminPaymentMethods() {
                       <CreditCard className="w-5 h-5 text-gray-400 mr-3" />
                       <span className="text-sm font-medium text-gray-900">{method.name}</span>
                     </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-sm text-gray-500">{method.description || '-'}</span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <button
-                      onClick={() => toggleActive(method)}
-                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-                        method.isActive
-                          ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                          : 'bg-red-100 text-red-800 hover:bg-red-200'
-                      } transition`}
-                      disabled={updateMutation.isPending}
-                    >
-                      {method.isActive ? (
-                        <>
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          Active
-                        </>
-                      ) : (
-                        <>
-                          <XCircle className="w-3 h-3 mr-1" />
-                          Inactive
-                        </>
-                      )}
-                    </button>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex justify-end space-x-2">
