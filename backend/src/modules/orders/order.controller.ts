@@ -40,18 +40,6 @@ export class OrderController {
     }
   };
 
-  updateStatus = async (req: Request, res: Response) => {
-    try {
-      const order = await this.orderService.updateStatus(
-        req.params.id,
-        req.body
-      );
-      return ResponseUtil.success(res, order, "Order status updated");
-    } catch (error: any) {
-      return ResponseUtil.error(res, error.message);
-    }
-  };
-
   getAllOrders = async (req: Request, res: Response) => {
     try {
       const { status } = req.query;

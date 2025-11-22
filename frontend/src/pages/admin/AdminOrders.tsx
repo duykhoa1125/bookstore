@@ -12,27 +12,15 @@ export default function AdminOrders() {
     queryFn: () => api.getAllOrders(),
   })
 
-  const updateStatusMutation = useMutation({
+  const confirmOrderMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' }) =>
-      api.updateOrderStatus(id, status),
+      api.confirmOrder(id, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] })
       toast.success('Order status updated successfully')
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to update order status')
-    },
-  })
-
-  const confirmOrderMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' }) =>
-      api.confirmOrder(id, status),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-orders'] })
-      toast.success('Order confirmed successfully')
-    },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to confirm order')
     },
   })
 
@@ -56,13 +44,7 @@ export default function AdminOrders() {
   }
 
   const handleStatusChange = (orderId: string, newStatus: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED') => {
-    updateStatusMutation.mutate({ id: orderId, status: newStatus })
-  }
-
-  const handleConfirmOrder = (orderId: string) => {
-    if (window.confirm('Are you sure you want to confirm this order?')) {
-      confirmOrderMutation.mutate({ id: orderId, status: 'PROCESSING' })
-    }
+    confirmOrderMutation.mutate({ id: orderId, status: newStatus })
   }
 
   if (isLoading) {
@@ -133,7 +115,7 @@ export default function AdminOrders() {
                     value={order.status}
                     onChange={(e) => handleStatusChange(order.id, e.target.value as any)}
                     className={`text-xs font-semibold px-3 py-1 rounded-full border-0 ${getStatusColor(order.status)}`}
-                    disabled={updateStatusMutation.isPending}
+                    disabled={confirmOrderMutation.isPending}
                   >
                     <option value="PENDING">PENDING</option>
                     <option value="PROCESSING">PROCESSING</option>
@@ -146,25 +128,13 @@ export default function AdminOrders() {
                   {order.items.length} item(s)
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <div className="flex items-center justify-end space-x-2">
-                    {!order.confirmedById && order.status === 'PENDING' && (
-                      <button
-                        onClick={() => handleConfirmOrder(order.id)}
-                        className="text-green-600 hover:text-green-900 bg-green-50 px-2 py-1 rounded"
-                        title="Confirm Order"
-                        disabled={confirmOrderMutation.isPending}
-                      >
-                        Confirm
-                      </button>
-                    )}
-                    <Link
-                      to={`/orders/${order.id}`}
-                      className="text-blue-600 hover:text-blue-900 p-2"
-                      title="View Order Details"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </Link>
-                  </div>
+                  <Link
+                    to={`/orders/${order.id}`}
+                    className="text-blue-600 hover:text-blue-900 p-2"
+                    title="View Order Details"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </Link>
                 </td>
               </tr>
             ))}

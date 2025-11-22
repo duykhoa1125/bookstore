@@ -4,7 +4,6 @@ import { AuthMiddleware } from "../../middleware/auth.middleware";
 import { ValidationMiddleware } from "../../middleware/validation.middleware";
 import {
   CreateOrderDto,
-  UpdateOrderStatusDto,
   ConfirmOrderDto,
 } from "./order.dto";
 
@@ -27,12 +26,6 @@ router.get(
 router.get("/:id", orderController.findById);
 router.patch(
   "/:id/status",
-  AuthMiddleware.authorize("ADMIN"),
-  ValidationMiddleware.validate(UpdateOrderStatusDto),
-  orderController.updateStatus
-);
-router.patch(
-  "/:id/confirm",
   AuthMiddleware.authorize("ADMIN"),
   ValidationMiddleware.validate(ConfirmOrderDto),
   orderController.confirmOrder

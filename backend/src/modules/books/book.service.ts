@@ -44,18 +44,36 @@ export class BookService {
         publisher: true,
         category: true,
         authors: { include: { author: true } },
-        ratings: { select: { stars: true } },
       },
       orderBy: { createdAt: "desc" },
     });
 
+    // Get average ratings using database aggregation for better performance
+    const bookIds = books.map((book) => book.id);
+    
+    // Only fetch ratings if there are books
+    let ratingsMap = new Map<string, number>();
+    
+    if (bookIds.length > 0) {
+      const ratingsData = await prisma.$queryRaw<
+        Array<{ bookId: string; averageRating: number }>
+      >`
+        SELECT "bookId", AVG(stars)::float as "averageRating"
+        FROM "Rating"
+        WHERE "bookId" = ANY(${bookIds})
+        GROUP BY "bookId"
+      `;
+
+      // Create a map for quick lookup
+      ratingsMap = new Map(
+        ratingsData.map((r) => [r.bookId, r.averageRating])
+      );
+    }
+
+    // Attach averageRating to books
     const booksWithAvgRating = books.map((book) => ({
       ...book,
-      averageRating:
-        book.ratings.length > 0
-          ? book.ratings.reduce((sum, r) => sum + r.stars, 0) /
-            book.ratings.length
-          : 0,
+      averageRating: ratingsMap.get(book.id) || 0,
     }));
 
     return booksWithAvgRating;

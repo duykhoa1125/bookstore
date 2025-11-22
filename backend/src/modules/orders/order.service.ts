@@ -1,5 +1,5 @@
 import prisma from "../../config/database";
-import { CreateOrderInput, UpdateOrderStatusInput } from "./order.dto";
+import { CreateOrderInput } from "./order.dto";
 
 export class OrderService {
   async create(userId: string, data: CreateOrderInput) {
@@ -91,19 +91,6 @@ export class OrderService {
     if (!order) {
       throw new Error("Order not found");
     }
-
-    return order;
-  }
-
-  async updateStatus(orderId: string, data: UpdateOrderStatusInput) {
-    const order = await prisma.order.update({
-      where: { id: orderId },
-      data: { status: data.status },
-      include: {
-        items: { include: { book: true } },
-        payment: true,
-      },
-    });
 
     return order;
   }

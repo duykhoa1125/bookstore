@@ -98,8 +98,6 @@ class ApiClient {
   // Book endpoints
   async getBooks(params?: {
     categoryId?: string;
-    authorId?: string;
-    publisherId?: string;
     search?: string;
   }): Promise<ApiResponse<Book[]>> {
     const response = await this.client.get("/books", { params });
@@ -307,16 +305,6 @@ class ApiClient {
   // Admin endpoints - Orders
   async getAllOrders(): Promise<ApiResponse<Order[]>> {
     const response = await this.client.get("/orders/all");
-    return response.data;
-  }
-
-  async updateOrderStatus(
-    id: string,
-    status: "PENDING" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED"
-  ): Promise<ApiResponse<Order>> {
-    const response = await this.client.patch(`/orders/${id}/status`, {
-      status,
-    });
     return response.data;
   }
 
