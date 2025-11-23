@@ -50,10 +50,17 @@ export class OrderService {
       });
 
       for (const item of cart.items) {
-        await tx.book.update({
-          where: { id: item.bookId },
+        const result = await tx.book.updateMany({
+          where: {
+            id: item.bookId,
+            stock: { gte: item.quantity },
+          },
           data: { stock: { decrement: item.quantity } },
         });
+
+        if (result.count === 0) {
+          throw new Error(`Insufficient stock for ${item.book.title}`);
+        }
       }
 
       await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
