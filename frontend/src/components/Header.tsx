@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { ShoppingCart, User, LogOut, BookOpen, Package, Search } from 'lucide-react'
+import { ShoppingCart, User, LogOut, BookOpen, Package, Search, Star } from 'lucide-react'
+import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
@@ -20,6 +21,13 @@ export default function Header() {
   const handleLogout = () => {
     logout()
     navigate('/')
+  }
+
+  const [headerSearch, setHeaderSearch] = useState('')
+
+  const triggerSearch = () => {
+    const term = headerSearch.trim()
+    navigate(term ? `/books?search=${encodeURIComponent(term)}` : '/books')
   }
 
   return (
@@ -74,17 +82,25 @@ export default function Header() {
           <div className="hidden lg:flex flex-1 max-w-md relative">
             <input
               type="text"
-              placeholder="Search for books..."
-              className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+              placeholder="Search by title, author, publisher, or description..."
+              value={headerSearch}
+              onChange={(e) => setHeaderSearch(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
-                  navigate(`/books?search=${e.currentTarget.value}`)
+                  triggerSearch()
                 }
               }}
+              className="w-full pl-4 pr-10 py-2 bg-gray-50 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
             />
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-              <Search className="h-4 w-4 text-gray-400" />
-            </div>
+            <button
+              type="button"
+              onClick={triggerSearch}
+              aria-label="Search"
+              title="Search"
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full text-gray-500 hover:text-blue-600 hover:shadow-[0_0_8px_rgba(59,130,246,0.6)] focus:shadow-[0_0_8px_rgba(59,130,246,0.8)] transition-all"
+            >
+              <Search className="h-4 w-4" />
+            </button>
           </div>
 
           {/* Right Actions */}
@@ -93,6 +109,8 @@ export default function Header() {
               <>
                 <Link
                   to="/cart"
+                  title="Cart"
+                  aria-label="Cart"
                   className="relative p-2 text-gray-600 hover:text-blue-600 transition-colors rounded-full hover:bg-gray-50"
                 >
                   <ShoppingCart className="w-5 h-5" />
@@ -110,10 +128,20 @@ export default function Header() {
                 >
                   <Package className="w-5 h-5" />
                 </Link>
+                <Link
+                  to="/my-ratings"
+                  className="relative p-2 text-gray-600 hover:text-yellow-500 transition-colors rounded-full hover:bg-yellow-50"
+                  title="My Ratings"
+                  aria-label="My Ratings"
+                >
+                  <Star className="w-5 h-5" />
+                </Link>
                 
                 <div className="flex items-center space-x-3 pl-4 border-l border-gray-200">
                   <Link
                     to="/profile"
+                    title="Profile"
+                    aria-label="Profile"
                     className="flex items-center space-x-2 group"
                   >
                     <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-medium shadow-sm group-hover:shadow-md transition-all">
