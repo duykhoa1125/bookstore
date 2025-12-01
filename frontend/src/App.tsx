@@ -23,6 +23,7 @@ import AdminCategories from './pages/admin/AdminCategories'
 import AdminAuthors from './pages/admin/AdminAuthors'
 import AdminPublishers from './pages/admin/AdminPublishers'
 import AdminPaymentMethods from './pages/admin/AdminPaymentMethods'
+import AdminUsers from './pages/admin/AdminUsers'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading } = useAuth()
@@ -137,6 +138,7 @@ function App() {
           <Route path="authors" element={<AdminAuthors />} />
           <Route path="publishers" element={<AdminPublishers />} />
           <Route path="payment-methods" element={<AdminPaymentMethods />} />
+          <Route path="users" element={<AdminUsers />} />
         </Route>
       </Routes>
     </BrowserRouter>

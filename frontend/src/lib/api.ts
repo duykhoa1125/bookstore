@@ -432,6 +432,27 @@ class ApiClient {
     });
     return response.data;
   }
+
+  // Admin user management endpoints
+  async getUsers(): Promise<ApiResponse<User[]>> {
+    const response = await this.client.get("/users");
+    return response.data;
+  }
+
+  async getUser(id: string): Promise<ApiResponse<User>> {
+    const response = await this.client.get(`/users/${id}`);
+    return response.data;
+  }
+
+  async updateUser(id: string, data: Partial<User>): Promise<ApiResponse<User>> {
+    const response = await this.client.patch(`/users/${id}`, data);
+    return response.data;
+  }
+
+  async deleteUser(id: string): Promise<ApiResponse<{ message: string }>> {
+    const response = await this.client.delete(`/users/${id}`);
+    return response.data;
+  }
 }
 
 export const api = new ApiClient();

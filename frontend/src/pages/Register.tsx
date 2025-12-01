@@ -17,9 +17,18 @@ export default function Register() {
   const navigate = useNavigate()
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    if (name === 'phone') {
+      // Allow only digits and optional leading +, max 15 digits
+      const cleaned = value
+        .replace(/[^\d+]/g, '') // keep digits and +
+        .replace(/(?!^)[+]/g, '') // only allow + at start
+      setFormData({ ...formData, phone: cleaned.slice(0, 16) })
+      return
+    }
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [name]: value,
     })
   }
 
@@ -86,11 +95,14 @@ export default function Register() {
                 id="phone"
                 name="phone"
                 type="tel"
+                inputMode="tel"
+                pattern="^\+?\d{8,15}$"
                 value={formData.phone}
                 onChange={handleChange}
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 bg-white rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="+1-234-567-8900"
+                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-400 text-gray-900 bg-white rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                placeholder="+1234567890"
               />
+              <p className="mt-1 text-xs text-gray-500">Digits only, optional leading +, 8–15 digits.</p>
             </div>
             <div>
               <label htmlFor="address" className="block text-sm font-medium text-gray-700">

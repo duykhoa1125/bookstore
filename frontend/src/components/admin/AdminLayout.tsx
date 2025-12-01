@@ -19,10 +19,11 @@ export default function AdminLayout() {
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
     { id: 'orders', label: 'Orders', icon: ShoppingBag, path: '/admin/orders' },
     { id: 'books', label: 'Books', icon: BookOpen, path: '/admin/books' },
+    { id: 'users', label: 'Users', icon: Users, path: '/admin/users' },
     { id: 'categories', label: 'Categories', icon: FolderTree, path: '/admin/categories' },
     { id: 'authors', label: 'Authors', icon: Users, path: '/admin/authors' },
     { id: 'publishers', label: 'Publishers', icon: Building2, path: '/admin/publishers' },
-    { id: 'payment-methods', label: 'Payment Methods', icon: CreditCard, path: '/admin/payment-methods' },
+    { id: 'payment-methods', label: 'Payment Methods', icon: CreditCard, path: '/admin/payment-methods' }
   ]
 
   const isActive = (path: string) => {
