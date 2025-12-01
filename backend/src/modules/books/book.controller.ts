@@ -16,10 +16,12 @@ export class BookController {
 
   findAll = async (req: Request, res: Response) => {
     try {
-      const { categoryId, search } = req.query;
+      const { categoryId, search, sortBy, order } = req.query;
       const books = await this.bookService.findAll({
         categoryId: categoryId as string,
         search: search as string,
+        sortBy: (sortBy as string) as any,
+        order: (order as string) as any,
       });
       return ResponseUtil.success(res, books, "Books fetched successfully");
     } catch (error: any) {

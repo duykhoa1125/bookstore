@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { BookOpen, Search, Star, Filter, ShoppingCart } from 'lucide-react'
@@ -10,12 +10,52 @@ import { useAuth } from '../contexts/AuthContext'
 export default function Books() {
   const { user } = useAuth()
   const queryClient = useQueryClient()
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState<string>('')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '')
+  const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get('categoryId') || '')
+  const [sortBy, setSortBy] = useState<string>(searchParams.get('sortBy') || '')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(
+    (searchParams.get('order') as 'asc' | 'desc') || 'desc'
+  )
+
+  // Update local state if URL changes externally (e.g. header search while on page)
+  useEffect(() => {
+    const paramSearch = searchParams.get('search') || ''
+    const paramCategory = searchParams.get('categoryId') || ''
+    const paramSortBy = searchParams.get('sortBy') || ''
+    const paramOrder = (searchParams.get('order') as 'asc' | 'desc') || 'desc'
+    if (paramSearch !== searchTerm) setSearchTerm(paramSearch)
+    if (paramCategory !== selectedCategory) setSelectedCategory(paramCategory)
+    if (paramSortBy !== sortBy) setSortBy(paramSortBy)
+    if (paramOrder !== sortOrder) setSortOrder(paramOrder)
+  }, [searchParams])
+
+  const applyParams = (
+    nextSearch: string,
+    nextCategory: string,
+    nextSortBy: string,
+    nextOrder: 'asc' | 'desc'
+  ) => {
+    const params: Record<string, string> = {}
+    const trimmed = nextSearch.trim()
+    if (trimmed) params.search = trimmed
+    if (nextCategory) params.categoryId = nextCategory
+    if (nextSortBy) {
+      params.sortBy = nextSortBy
+      if (nextOrder) params.order = nextOrder
+    }
+    setSearchParams(params)
+  }
 
   const { data: booksData, isLoading: booksLoading, error: booksError } = useQuery({
-    queryKey: ['books', selectedCategory, searchTerm],
-    queryFn: () => api.getBooks({ categoryId: selectedCategory || undefined, search: searchTerm || undefined }),
+    queryKey: ['books', selectedCategory, searchTerm, sortBy, sortOrder],
+    queryFn: () =>
+      api.getBooks({
+        categoryId: selectedCategory || undefined,
+        search: searchTerm || undefined,
+        sortBy: (sortBy as 'price' | 'rating') || undefined,
+        order: (sortBy ? sortOrder : undefined) as 'asc' | 'desc' | undefined,
+      }),
     retry: (failureCount, error: any) => {
       if (error?.response?.status === 429) {
         return false;
@@ -70,28 +110,89 @@ export default function Books() {
       {/* Search and Filter Section */}
       <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm shadow-md border-b border-gray-200">
         <div className="container mx-auto px-4 py-4">
-          {/* Search Bar */}
           <div className="mb-4">
-            <div className="relative max-w-2xl mx-auto">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="search"
-                placeholder="Search for books by title, author, or description..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3.5 border border-gray-300 rounded-full shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-900 placeholder-gray-400"
-              />
+            <div className="flex items-center gap-3 max-w-6xl mx-auto">
+              {/* Search bar on the right */}
+              <div className="relative flex-1">
+                <Search className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="search"
+                  placeholder="Search by title, author, publisher, or description..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    setSearchTerm(v)
+                    applyParams(v, selectedCategory, sortBy, sortOrder)
+                  }}
+                  className="w-full pl-12 pr-4 py-3.5 border border-gray-300 rounded-full shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-900 placeholder-gray-400"
+                />
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span className="text-sm text-gray-600">Sort:</span>
+                {/* Price sort button cycles asc -> desc -> none */}
+                <button
+                  onClick={() => {
+                    if (sortBy !== 'price') {
+                      setSortBy('price')
+                      setSortOrder('asc')
+                      applyParams(searchTerm, selectedCategory, 'price', 'asc')
+                    } else if (sortOrder === 'asc') {
+                      setSortOrder('desc')
+                      applyParams(searchTerm, selectedCategory, 'price', 'desc')
+                    } else {
+                      setSortBy('')
+                      applyParams(searchTerm, selectedCategory, '', sortOrder)
+                    }
+                  }}
+                  className={`px-3 py-2 rounded-full text-sm font-medium border transition-all ${
+                    sortBy === 'price'
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                  }`}
+                  title={`Cycle price sort (asc → desc → none)`}
+                >
+                  Price {sortBy === 'price' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}
+                </button>
+                {/* Rating sort button cycles asc -> desc -> none */}
+                <button
+                  onClick={() => {
+                    if (sortBy !== 'rating') {
+                      setSortBy('rating')
+                      setSortOrder('asc')
+                      applyParams(searchTerm, selectedCategory, 'rating', 'asc')
+                    } else if (sortOrder === 'asc') {
+                      setSortOrder('desc')
+                      applyParams(searchTerm, selectedCategory, 'rating', 'desc')
+                    } else {
+                      // none
+                      setSortBy('')
+                      applyParams(searchTerm, selectedCategory, '', sortOrder)
+                    }
+                  }}
+                  className={`px-3 py-2 rounded-full text-sm font-medium border transition-all ${
+                    sortBy === 'rating'
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                  }`}
+                  title={`Cycle rating sort (asc → desc → none)`}
+                >
+                  Rating {sortBy === 'rating' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}
+                </button>
+              </div>
             </div>
           </div>
 
           {/* Category Filter */}
-          <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
+          <div className="flex flex-wrap items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
             <div className="flex items-center gap-2 text-gray-600 px-2 flex-shrink-0">
               <Filter className="w-4 h-4" />
               <span className="text-sm font-medium">Filter:</span>
             </div>
             <button
-              onClick={() => setSelectedCategory('')}
+              onClick={() => {
+                setSelectedCategory('')
+                applyParams(searchTerm, '', sortBy, sortOrder)
+              }}
               className={`px-4 py-2 rounded-full font-medium text-sm whitespace-nowrap transition-all flex-shrink-0 ${
                 selectedCategory === ''
                   ? 'bg-blue-600 text-white shadow-md'
@@ -103,7 +204,10 @@ export default function Books() {
             {categories.map((category) => (
               <button
                 key={category.id}
-                onClick={() => setSelectedCategory(category.id)}
+                onClick={() => {
+                  setSelectedCategory(category.id)
+                  applyParams(searchTerm, category.id, sortBy, sortOrder)
+                }}
                 className={`px-4 py-2 rounded-full font-medium text-sm whitespace-nowrap transition-all flex-shrink-0 ${
                   selectedCategory === category.id
                     ? 'bg-blue-600 text-white shadow-md'
@@ -187,7 +291,7 @@ export default function Books() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {books.map((book) => {
               const averageRating = book.averageRating || 0
-              const ratingCount = book.ratings?.length || 0
+              const hasRating = averageRating > 0
               
               return (
                 <div
@@ -221,7 +325,7 @@ export default function Books() {
                       )}
                       
                       {/* Rating badge overlay */}
-                      {ratingCount > 0 && (
+                      {hasRating && (
                         <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-sm px-2.5 py-1.5 rounded-lg shadow-lg">
                           <div className="flex items-center gap-1">
                             <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
@@ -256,8 +360,8 @@ export default function Books() {
                       )}
                       
                       {/* Rating display */}
-                      <div className="mb-4">
-                        {ratingCount > 0 ? (
+                      <div>
+                        {hasRating ? (
                           <div className="space-y-1">
                             <div className="flex items-center gap-1">
                               {[1, 2, 3, 4, 5].map((star) => (
@@ -271,9 +375,6 @@ export default function Books() {
                                 />
                               ))}
                             </div>
-                            <p className="text-xs text-gray-500">
-                              {averageRating.toFixed(1)} • {ratingCount} {ratingCount === 1 ? 'review' : 'reviews'}
-                            </p>
                           </div>
                         ) : (
                           <div className="space-y-1">
@@ -289,6 +390,18 @@ export default function Books() {
                           </div>
                         )}
                       </div>
+                      {/* Stocks */}
+                      <div className="mt-2 mb-4">
+                        <div className="flex items-center min-h-[32px]">
+                          {book.stock >= 20 ? (
+                            <span className="text-xs text-green-600 font-medium">In Stock</span>
+                          ) : book.stock > 0 ? (
+                            <span className="text-xs text-orange-600 font-medium">{book.stock} left in stock</span>
+                          ) : (
+                            <span className="text-xs text-red-600 font-medium">Out of Stock</span>
+                          )}
+                        </div>
+                      </div>
                     </Link>
                     
                     {/* Price and CTA */}
@@ -297,11 +410,6 @@ export default function Books() {
                         <span className="text-3xl font-bold text-gray-900">
                           ${book.price.toFixed(2)}
                         </span>
-                        {book.stock > 0 && book.stock < 10 && book.stock >= 5 && (
-                          <span className="text-xs text-gray-500">
-                            {book.stock} in stock
-                          </span>
-                        )}
                       </div>
                       
                       <button

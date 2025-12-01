@@ -99,6 +99,8 @@ class ApiClient {
   async getBooks(params?: {
     categoryId?: string;
     search?: string;
+    sortBy?: "price" | "rating";
+    order?: "asc" | "desc";
   }): Promise<ApiResponse<Book[]>> {
     const response = await this.client.get("/books", { params });
     // Backend returns { success, message, data: Book[], pagination }

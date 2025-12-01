@@ -27,6 +27,8 @@ export class BookService {
   async findAll(params: {
     categoryId?: string;
     search?: string;
+    sortBy?: "price" | "rating";
+    order?: "asc" | "desc";
   }) {
     const where: any = {};
 
@@ -34,8 +36,57 @@ export class BookService {
       where.categoryId = params.categoryId;
     }
 
+    // Tokenized multi-field search: each token must match at least one field
     if (params.search) {
-      where.title = { contains: params.search, mode: "insensitive" };
+      const raw = params.search.trim();
+      if (raw.length > 0) {
+        const tokens = Array.from(
+          new Set(
+            raw
+              .split(/\s+/)
+              .filter((t) => t.length > 0)
+              .slice(0, 8) // safety cap to avoid huge queries
+          )
+        );
+        if (tokens.length === 1) {
+          const token = tokens[0];
+          where.OR = [
+            { title: { contains: token, mode: "insensitive" } },
+            { description: { contains: token, mode: "insensitive" } },
+            { publisher: { name: { contains: token, mode: "insensitive" } } },
+            { category: { name: { contains: token, mode: "insensitive" } } },
+            {
+              authors: {
+                some: {
+                  author: { name: { contains: token, mode: "insensitive" } },
+                },
+              },
+            },
+          ];
+        } else if (tokens.length > 1) {
+          where.AND = tokens.map((token) => ({
+            OR: [
+              { title: { contains: token, mode: "insensitive" } },
+              { description: { contains: token, mode: "insensitive" } },
+              { publisher: { name: { contains: token, mode: "insensitive" } } },
+              { category: { name: { contains: token, mode: "insensitive" } } },
+              {
+                authors: {
+                  some: {
+                    author: { name: { contains: token, mode: "insensitive" } },
+                  },
+                },
+              },
+            ],
+          }));
+        }
+      }
+    }
+
+    // Determine base sorting for DB query. We can sort by price in DB; rating will be sorted in-memory after aggregation
+    let orderBy: any = { createdAt: "desc" };
+    if (params.sortBy === "price" && (params.order === "asc" || params.order === "desc")) {
+      orderBy = { price: params.order };
     }
 
     const books = await prisma.book.findMany({
@@ -45,7 +96,7 @@ export class BookService {
         category: true,
         authors: { include: { author: true } },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy,
     });
 
     // Get average ratings using database aggregation for better performance
@@ -58,23 +109,35 @@ export class BookService {
       const ratingsData = await prisma.$queryRaw<
         Array<{ bookId: string; averageRating: number }>
       >`
-        SELECT "book_id" as "bookId", AVG(stars)::float as "averageRating"
+        SELECT "book_id" as "bookId",
+               AVG(stars)::float as "averageRating"
         FROM "ratings"
         WHERE "book_id" = ANY(${bookIds})
         GROUP BY "book_id"
       `;
 
-      // Create a map for quick lookup
+      // Create a map for quick lookup of averages
       ratingsMap = new Map(
         ratingsData.map((r) => [r.bookId, r.averageRating])
       );
     }
 
     // Attach averageRating to books
-    const booksWithAvgRating = books.map((book) => ({
+    let booksWithAvgRating = books.map((book) => ({
       ...book,
       averageRating: ratingsMap.get(book.id) || 0,
     }));
+
+    // If sorting by rating, apply in-memory sort on computed averageRating
+    if (params.sortBy === "rating") {
+      const direction = params.order === "asc" ? 1 : -1; // default desc if invalid
+      booksWithAvgRating = booksWithAvgRating.sort((a: any, b: any) => {
+        const ar = (a.averageRating ?? 0) as number;
+        const br = (b.averageRating ?? 0) as number;
+        if (ar === br) return 0;
+        return ar > br ? direction : -direction;
+      });
+    }
 
     return booksWithAvgRating;
   }
