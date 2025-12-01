@@ -90,7 +90,10 @@ export default function AdminPaymentMethods() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-4xl font-bold">Payment Methods</h1>
+        <div>
+          <h1 className="text-4xl font-bold">Payment Methods</h1>
+          <p className="text-gray-600 mt-2">Create, edit, and delete payment methods</p>
+        </div>
         <button
           onClick={() => {
             setShowCreateModal(true)

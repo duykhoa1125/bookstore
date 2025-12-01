@@ -37,7 +37,10 @@ export default function AdminBooks() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-4xl font-bold">Manage Books</h1>
+        <div>
+          <h1 className="text-4xl font-bold">Manage Books</h1>
+          <p className="text-gray-600 mt-2">Create, edit, and delete books</p>
+        </div>
         <Link
           to="/admin/books/create"
           className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition flex items-center space-x-2"

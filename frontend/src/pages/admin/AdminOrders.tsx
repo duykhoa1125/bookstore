@@ -1,11 +1,13 @@
+import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
-import { Package, Eye } from 'lucide-react'
+import { Package, Eye, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { Link } from 'react-router-dom'
 
 export default function AdminOrders() {
   const queryClient = useQueryClient()
+  const [pendingById, setPendingById] = useState<Record<string, boolean>>({})
 
   const { data: ordersData, isLoading } = useQuery({
     queryKey: ['admin-orders'],
@@ -15,12 +17,40 @@ export default function AdminOrders() {
   const confirmOrderMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' }) =>
       api.confirmOrder(id, status),
-    onSuccess: () => {
+    onMutate: async ({ id, status }) => {
+      setPendingById((m) => ({ ...m, [id]: true }))
+      await queryClient.cancelQueries({ queryKey: ['admin-orders'] })
+      const previous = queryClient.getQueryData(['admin-orders']) as any
+      // Optimistically update order status in cache
+      queryClient.setQueryData(['admin-orders'], (oldData: any) => {
+        if (!oldData?.data) return oldData
+        const updated = oldData.data.map((o: any) =>
+          o.id === id ? { ...o, status } : o
+        )
+        return { ...oldData, data: updated }
+      })
+      return { previous, id }
+    },
+    onError: (error: any, _variables, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['admin-orders'], context.previous)
+      }
+      toast.error(error?.response?.data?.message || 'Failed to update order status')
+    },
+    onSettled: (_data, _err, variables, context) => {
+      if (variables?.id) {
+        setPendingById((m) => {
+          const { [variables.id]: _removed, ...rest } = m
+          return rest
+        })
+      } else if (context?.id) {
+        setPendingById((m) => {
+          const { [context.id]: _removed, ...rest } = m
+          return rest
+        })
+      }
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] })
       toast.success('Order status updated successfully')
-    },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to update order status')
     },
   })
 
@@ -115,7 +145,7 @@ export default function AdminOrders() {
                     value={order.status}
                     onChange={(e) => handleStatusChange(order.id, e.target.value as any)}
                     className={`text-xs font-semibold px-3 py-1 rounded-full border-0 ${getStatusColor(order.status)}`}
-                    disabled={confirmOrderMutation.isPending}
+                    disabled={!!pendingById[order.id]}
                   >
                     <option value="PENDING">PENDING</option>
                     <option value="PROCESSING">PROCESSING</option>
@@ -123,6 +153,9 @@ export default function AdminOrders() {
                     <option value="DELIVERED">DELIVERED</option>
                     <option value="CANCELLED">CANCELLED</option>
                   </select>
+                  {pendingById[order.id] && (
+                    <Loader2 className="w-4 h-4 text-gray-400 ml-2 inline align-middle animate-spin" aria-label="Updating status" />
+                  )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {order.items.length} item(s)
