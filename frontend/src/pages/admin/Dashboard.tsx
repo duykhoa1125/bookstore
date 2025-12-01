@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { 
@@ -25,34 +26,74 @@ export default function AdminDashboardOverview() {
   const orders = ordersData?.data || []
   const books = booksData?.data || []
 
-  // Calculate statistics
-  const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0)
-  const totalOrders = orders.length
-  const lowStockBooks = books.filter(book => book.stock < 10).length
+  const {
+    totalRevenue,
+    totalOrders,
+    lowStockBooks,
+    uniqueCustomers,
+    recentOrders,
+    topSellingBooks
+  } = useMemo(() => {
+    const revenue = orders.reduce((sum, order: any) => {
+      const paymentTotal = order?.payment?.status === 'COMPLETED' ? order.payment.total : 0
+      return sum + (paymentTotal || 0)
+    }, 0)
 
-  // Recent orders (last 5)
-  const recentOrders = orders.slice(0, 5)
+    const totalOrdersLocal = orders.length
+    const lowStock = books.filter(b => b.stock < 10).length
 
-  // Top selling books (mock data - would need actual sales data)
-  const topSellingBooks = books
-    .sort((a, b) => (b.ratings?.length || 0) - (a.ratings?.length || 0))
-    .slice(0, 4)
+    // Unique customers from orders
+    const customerIds = new Set<string>()
+    orders.forEach(o => { if (o.userId) customerIds.add(o.userId) })
+
+    const recent = [...orders]
+      .sort((a: any, b: any) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime())
+      .slice(0, 5)
+
+    const salesMap = new Map<string, { quantity: number, book: any }>()
+    orders.forEach((order: any) => {
+      if (order.status === 'CANCELLED') return
+      order.items?.forEach((item: any) => {
+        const current = salesMap.get(item.bookId)
+        const bookRef = item.book || books.find(b => b.id === item.bookId)
+        if (!bookRef) return
+        if (current) {
+          current.quantity += item.quantity
+        } else {
+          salesMap.set(item.bookId, { quantity: item.quantity, book: bookRef })
+        }
+      })
+    })
+    const topSelling = Array.from(salesMap.values())
+      .sort((a, b) => b.quantity - a.quantity)
+      .slice(0, 4)
+      .map(entry => ({ ...entry.book, sold: entry.quantity }))
+
+    return {
+      totalRevenue: revenue,
+      totalOrders: totalOrdersLocal,
+      lowStockBooks: lowStock,
+      uniqueCustomers: customerIds.size,
+      recentOrders: recent,
+      topSellingBooks: topSelling
+    }
+  }, [orders, books])
 
   const stats = [
     {
       title: 'Total Revenue',
       value: `$${totalRevenue.toFixed(2)}`,
-      change: '+20.1% from last month',
-      trending: 'up',
+      change: 'Completed payment revenue',
+      trending: 'neutral',
       icon: DollarSign,
       color: 'text-green-600',
       bgColor: 'bg-green-50',
     },
     {
-      title: 'New Users',
-      value: '+2,350',
-      change: '+180.1% from last month',
-      trending: 'up',
+      title: 'Customers',
+      value: uniqueCustomers.toString(),
+      change: 'Distinct buyers in system',
+      trending: 'neutral',
       icon: Users,
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
@@ -60,8 +101,8 @@ export default function AdminDashboardOverview() {
     {
       title: 'Total Orders',
       value: totalOrders.toString(),
-      change: totalOrders > 0 ? '-2.5% from last month' : 'No orders yet',
-      trending: 'down',
+      change: 'All order statuses',
+      trending: 'neutral',
       icon: ShoppingCart,
       color: 'text-purple-600',
       bgColor: 'bg-purple-50',
@@ -69,7 +110,7 @@ export default function AdminDashboardOverview() {
     {
       title: 'Stock Alerts',
       value: lowStockBooks.toString(),
-      change: 'Items with low inventory',
+      change: 'Books with stock < 10',
       trending: 'neutral',
       icon: AlertTriangle,
       color: 'text-orange-600',
@@ -153,7 +194,7 @@ export default function AdminDashboardOverview() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {recentOrders.length > 0 ? (
-                  recentOrders.map((order) => (
+                  recentOrders.map((order: any) => (
                     <tr key={order.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         #{order.id.substring(0, 8)}
@@ -193,7 +234,7 @@ export default function AdminDashboardOverview() {
           </div>
           <div className="p-6 space-y-4">
             {topSellingBooks.length > 0 ? (
-              topSellingBooks.map((book) => (
+              topSellingBooks.map((book: any) => (
                 <div key={book.id} className="flex items-center space-x-4">
                   <div className="flex-shrink-0">
                     {book.imageUrl ? (
@@ -211,11 +252,11 @@ export default function AdminDashboardOverview() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-900 truncate">{book.title}</p>
                     <p className="text-xs text-gray-500 truncate">
-                      by {book.authors?.map(a => a.author.name).join(', ')}
+                      by {book.authors?.map((a: any) => a.author.name).join(', ')}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-bold text-gray-900">{book.ratings?.length || 0} sold</p>
+                    <p className="text-sm font-bold text-gray-900">{book.sold || 0} sold</p>
                   </div>
                 </div>
               ))

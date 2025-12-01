@@ -20,7 +20,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <App />
-        <Toaster position="top-right" />
+        <Toaster position="top-right" containerStyle={{ marginTop: 72 }} />
       </AuthProvider>
     </QueryClientProvider>
   </React.StrictMode>,
