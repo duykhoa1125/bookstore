@@ -10,6 +10,7 @@ export default function Cart() {
   const queryClient = useQueryClient()
   const [shippingAddress, setShippingAddress] = useState('')
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('')
+  const [pendingUpdates, setPendingUpdates] = useState(0)
 
   const { data: cartData, isLoading } = useQuery({
     queryKey: ['cart'],
@@ -31,7 +32,38 @@ export default function Cart() {
   const updateItemMutation = useMutation({
     mutationFn: ({ itemId, quantity }: { itemId: string; quantity: number }) =>
       api.updateCartItem(itemId, { quantity }),
-    onSuccess: () => {
+    // Optimistic update for snappy UX
+    onMutate: async ({ itemId, quantity }) => {
+      setPendingUpdates((c) => c + 1)
+      await queryClient.cancelQueries({ queryKey: ['cart'] })
+      const previous = queryClient.getQueryData(['cart']) as any
+
+      // Optimistically update cache
+      queryClient.setQueryData(['cart'], (oldData: any) => {
+        if (!oldData?.data) return oldData
+        const cart = { ...oldData.data }
+        const items = cart.items.map((it: any) =>
+          it.id === itemId ? { ...it, quantity } : it
+        )
+        const total = items.reduce(
+          (sum: number, it: any) => sum + it.book.price * it.quantity,
+          0
+        )
+        return { ...oldData, data: { ...cart, items, total } }
+      })
+
+      return { previous }
+    },
+    onError: (_err, _vars, context) => {
+      // Rollback
+      if (context?.previous) {
+        queryClient.setQueryData(['cart'], context.previous)
+      }
+      toast.error('Failed to update quantity')
+    },
+    onSettled: () => {
+      setPendingUpdates((c) => Math.max(0, c - 1))
+      // Refetch to sync
       queryClient.invalidateQueries({ queryKey: ['cart'] })
     },
   })
@@ -111,8 +143,12 @@ export default function Cart() {
     }
   }
 
-  const handleCheckout = (e: React.FormEvent) => {
+  const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (pendingUpdates > 0) {
+      toast('Please wait for cart updates to finish')
+      return
+    }
     if (!shippingAddress.trim()) {
       toast.error('Please enter shipping address')
       return
@@ -125,6 +161,10 @@ export default function Cart() {
       toast.error('Please select a payment method')
       return
     }
+    // Ensure server-side cart is up to date before creating the order
+    await queryClient.invalidateQueries({ queryKey: ['cart'] })
+    await queryClient.refetchQueries({ queryKey: ['cart'] })
+
     createOrderMutation.mutate({
       shippingAddress: shippingAddress.trim(),
       paymentMethodId: selectedPaymentMethod,
@@ -166,7 +206,7 @@ export default function Cart() {
                     <div className="flex items-center space-x-2 border border-gray-300 rounded">
                       <button
                         onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                        disabled={item.quantity <= 1 || updateItemMutation.isPending}
+                        disabled={item.quantity <= 1}
                         className="p-1 hover:bg-gray-100 disabled:opacity-50"
                       >
                         <Minus className="w-4 h-4" />
@@ -174,7 +214,7 @@ export default function Cart() {
                       <span className="px-3 py-1">{item.quantity}</span>
                       <button
                         onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                        disabled={item.quantity >= item.book.stock || updateItemMutation.isPending}
+                        disabled={item.quantity >= item.book.stock}
                         className="p-1 hover:bg-gray-100 disabled:opacity-50"
                       >
                         <Plus className="w-4 h-4" />
@@ -268,10 +308,14 @@ export default function Cart() {
 
               <button
                 type="submit"
-                disabled={createOrderMutation.isPending || !shippingAddress.trim() || !selectedPaymentMethod}
+                disabled={createOrderMutation.isPending || pendingUpdates > 0 || !shippingAddress.trim() || !selectedPaymentMethod}
                 className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
               >
-                {createOrderMutation.isPending ? 'Processing Order...' : 'Place Order'}
+                {pendingUpdates > 0
+                  ? 'Applying updates...'
+                  : createOrderMutation.isPending
+                  ? 'Processing Order...'
+                  : 'Place Order'}
               </button>
             </form>
           </div>
