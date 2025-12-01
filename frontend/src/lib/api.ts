@@ -189,6 +189,7 @@ class ApiClient {
     bookId: string;
     stars: number;
     content?: string;
+    replaceIfExists?: boolean;
   }): Promise<ApiResponse<any>> {
     const response = await this.client.post("/ratings", data);
     return response.data;

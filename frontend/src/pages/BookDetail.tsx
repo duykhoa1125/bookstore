@@ -55,8 +55,35 @@ export default function BookDetail() {
       setRatingStars(0);
       setRatingContent("");
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to add rating");
+    onError: (error: any, variables) => {
+      if (error?.response?.status === 409) {
+        const confirmed = window.confirm(
+          "You have reviewed this book before, do you want to update your review?"
+        );
+        if (confirmed) {
+          api
+            .createRating({
+              bookId: id!,
+              stars: variables.stars,
+              content: variables.content,
+              replaceIfExists: true,
+            })
+            .then(() => {
+              queryClient.invalidateQueries({ queryKey: ["ratings", id] });
+              queryClient.invalidateQueries({ queryKey: ["book", id] });
+              toast.success("Rating updated!");
+              setRatingStars(0);
+              setRatingContent("");
+            })
+            .catch((err) => {
+              toast.error(
+                err?.response?.data?.message || "Failed to update rating"
+              );
+            });
+        }
+        return;
+      }
+      toast.error(error?.response?.data?.message || "Failed to add rating");
     },
   });
 

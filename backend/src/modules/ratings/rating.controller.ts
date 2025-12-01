@@ -7,13 +7,29 @@ export class RatingController {
 
   create = async (req: Request, res: Response) => {
     try {
-      const rating = await this.ratingService.create(req.user!.id, req.body);
-      return ResponseUtil.success(
-        res,
-        rating,
-        "Rating created successfully",
-        201
+      const userId = req.user!.id;
+      const { replaceIfExists, ...payload } = req.body as any;
+
+      // Check if user already rated this book
+      const existing = await this.ratingService.getUserRatingForBook(
+        userId,
+        payload.bookId
       );
+
+      if (existing && !replaceIfExists) {
+        return ResponseUtil.error(res, "You have reviewed this book before. Do you want to update your review?", { statusCode: 409, errors: { code: "RATING_EXISTS", ratingId: existing.id } });
+      }
+
+      if (existing && replaceIfExists) {
+        const updated = await this.ratingService.update(userId, existing.id, {
+          stars: payload.stars,
+          content: payload.content,
+        });
+        return ResponseUtil.success(res, updated, "Rating updated successfully");
+      }
+
+      const rating = await this.ratingService.create(userId, payload);
+      return ResponseUtil.success(res, rating, "Rating created successfully", 201);
     } catch (error: any) {
       return ResponseUtil.error(res, error.message);
     }

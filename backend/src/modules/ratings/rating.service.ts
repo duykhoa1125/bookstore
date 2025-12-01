@@ -2,7 +2,24 @@ import prisma from "../../config/database";
 import { CreateRatingInput, UpdateRatingInput } from "./rating.dto";
 
 export class RatingService {
+  private async hasPurchased(userId: string, bookId: string) {
+    const count = await prisma.orderItem.count({
+      where: {
+        bookId,
+        order: {
+          userId,
+          status: { not: "CANCELLED" },
+        },
+      },
+    });
+    return count > 0;
+  }
+
   async create(userId: string, data: CreateRatingInput) {
+    const purchased = await this.hasPurchased(userId, data.bookId);
+    if (!purchased) {
+      throw new Error("You must purchase this book before reviewing it");
+    }
     const rating = await prisma.rating.create({
       data: {
         userId,
@@ -33,6 +50,11 @@ export class RatingService {
 
     if (!rating || rating.userId !== userId) {
       throw new Error("Rating not found");
+    }
+
+    const purchased = await this.hasPurchased(userId, rating.bookId);
+    if (!purchased) {
+      throw new Error("You must purchase this book before updating the review");
     }
 
     const updated = await prisma.rating.update({

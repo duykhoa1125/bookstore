@@ -55,6 +55,18 @@ input[type="search"] {
   @apply rounded-full;
 }
 
+/* Remove native number input spinners (Chrome, Edge, Safari) */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Remove native number input spinners (Firefox) */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
 /* Floating label support */
 .form-floating {
   @apply relative;
