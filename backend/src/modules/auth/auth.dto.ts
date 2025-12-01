@@ -5,7 +5,11 @@ export const RegisterDto = z.object({
   email: z.string().email(),
   password: z.string().min(6),
   fullName: z.string().min(2).max(100),
-  phone: z.string().optional(),
+  phone: z
+    .string()
+    .regex(/^\+?\d{8,15}$/, "Phone must be 8-15 digits, optional leading +")
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
   address: z.string().optional(),
   position: z.string().optional(),
 });
@@ -17,7 +21,11 @@ export const LoginDto = z.object({
 
 export const UpdateUserDto = z.object({
   fullName: z.string().min(2).max(100).optional(),
-  phone: z.string().optional(),
+  phone: z
+    .string()
+    .regex(/^\+?\d{8,15}$/, "Phone must be 8-15 digits, optional leading +")
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
   address: z.string().optional(),
   position: z.string().optional(),
 });

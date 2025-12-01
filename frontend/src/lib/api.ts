@@ -49,9 +49,16 @@ class ApiClient {
       (response) => response,
       (error) => {
         if (error.response?.status === 401) {
-          localStorage.removeItem("token");
-          localStorage.removeItem("user");
-          window.location.href = "/login";
+          const url: string = error?.config?.url || "";
+          // Do not redirect on auth endpoints; allow pages to handle errors
+          const isAuthEndpoint = url.includes("/auth/login") || url.includes("/auth/register");
+          if (!isAuthEndpoint) {
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+            if (window.location.pathname !== "/login") {
+              window.location.href = "/login";
+            }
+          }
         }
         if (error.response?.status === 429) {
           // Rate limit exceeded - show user-friendly message
