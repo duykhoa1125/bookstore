@@ -5,6 +5,7 @@ import { api } from '../../lib/api'
 import { ArrowLeft } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { Link } from 'react-router-dom'
+import { BookImageUpload } from '../../components/BookImageUpload'
 
 export default function CreateBook() {
   const navigate = useNavigate()
@@ -147,12 +148,20 @@ export default function CreateBook() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Image URL</label>
+            <label className="block text-sm font-medium mb-2">Book Cover Image</label>
+            <BookImageUpload
+              currentImage={formData.imageUrl}
+              onUrlChange={(url) => setFormData({ ...formData, imageUrl: url })}
+            />
+            <p className="text-xs text-gray-500 mt-2">
+              Drag & drop an image or click to upload. You can also paste an image URL below.
+            </p>
             <input
               type="url"
+              placeholder="Or enter image URL directly..."
               value={formData.imageUrl}
               onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
             />
           </div>
 

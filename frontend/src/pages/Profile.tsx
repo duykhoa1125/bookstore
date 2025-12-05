@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { User, Mail, Calendar, Phone, MapPin, Briefcase, Edit2, Save, X } from 'lucide-react'
+import { Mail, Calendar, Phone, MapPin, Briefcase, Edit2, Save, X, User as UserIcon } from 'lucide-react'
+import { AvatarUpload } from '../components/AvatarUpload'
 
 export default function Profile() {
-  const { user, updateProfile } = useAuth()
+  const { user, updateProfile, setUser } = useAuth()
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState({
     fullName: '',
@@ -47,10 +48,17 @@ export default function Profile() {
     try {
       await updateProfile(formData)
       setIsEditing(false)
-    } catch (error) {
+    } catch {
       // Error handled by context
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleAvatarUploadSuccess = (newAvatarUrl: string) => {
+    // Update user in context with new avatar
+    if (setUser) {
+      setUser((prev) => prev ? { ...prev, avatar: newAvatarUrl } : null)
     }
   }
 
@@ -62,8 +70,12 @@ export default function Profile() {
         <div className="bg-white rounded-lg shadow-md p-8">
           <div className="flex justify-between items-start mb-6">
             <div className="flex items-center">
-              <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mr-4">
-                <User className="w-8 h-8 text-blue-600" />
+              <div className="mr-4">
+                <AvatarUpload
+                  currentAvatar={user.avatar}
+                  onUploadSuccess={handleAvatarUploadSuccess}
+                  size="lg"
+                />
               </div>
               <div>
                 <h2 className="text-2xl font-semibold">{user.fullName}</h2>
@@ -159,7 +171,7 @@ export default function Profile() {
               </div>
 
               <div className="flex items-center">
-                <User className="w-5 h-5 text-gray-400 mr-3" />
+                <UserIcon className="w-5 h-5 text-gray-400 mr-3" />
                 <div>
                   <p className="text-sm text-gray-600">Role</p>
                   <p className="font-semibold">{user.role}</p>

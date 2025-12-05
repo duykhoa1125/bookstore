@@ -487,6 +487,50 @@ class ApiClient {
     const response = await this.client.get("/analytics/dashboard-stats");
     return response.data;
   }
+
+  // Upload endpoints (Cloudinary)
+  async uploadAvatar(file: File): Promise<ApiResponse<{ user: User; image: { url: string; publicId: string } }>> {
+    const formData = new FormData();
+    formData.append("avatar", file);
+
+    const response = await this.client.post("/upload/avatar", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response.data;
+  }
+
+  async uploadBookImage(
+    bookId: string,
+    file: File
+  ): Promise<ApiResponse<{ book: Book; image: { url: string; publicId: string } }>> {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const response = await this.client.post(`/upload/book/${bookId}`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response.data;
+  }
+
+  async uploadImage(
+    file: File,
+    type: "avatar" | "book" | "banner" = "book"
+  ): Promise<ApiResponse<{ url: string; publicId: string }>> {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const response = await this.client.post(`/upload/image?type=${type}`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response.data;
+  }
+
+  async deleteImage(publicId: string): Promise<ApiResponse<{ success: boolean }>> {
+    const response = await this.client.delete("/upload/image", {
+      data: { publicId },
+    });
+    return response.data;
+  }
 }
 
 export const api = new ApiClient();

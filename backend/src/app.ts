@@ -18,6 +18,7 @@ import paymentMethodRoutes from "./modules/payment-methods/payment-method.routes
 import paymentRoutes from "./modules/payments/payment.routes";
 import userRoutes from "./modules/users/user.routes";
 import analyticsRoutes from "./modules/analytics/analytics.routes";
+import uploadRoutes from "./modules/upload/upload.routes";
 
 const app: Application = express();
 
@@ -67,6 +68,7 @@ app.use("/api/payment-methods", paymentMethodRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/analytics", analyticsRoutes);
+app.use("/api/upload", uploadRoutes);
 
 // 404 handler
 app.use((req, res) => ResponseUtil.error(res, "Route not found", 404));

@@ -7,6 +7,8 @@ export interface User {
   address?: string;
   position?: string;
   role: "USER" | "ADMIN";
+  avatar?: string;
+  googleId?: string;
   createdAt: string;
   updatedAt: string;
 }
