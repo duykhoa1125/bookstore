@@ -2,12 +2,13 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { BookOpen } from 'lucide-react'
+import { GoogleLogin, CredentialResponse } from '@react-oauth/google'
 
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const { login } = useAuth()
+  const { login, googleLogin } = useAuth()
   const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -17,7 +18,21 @@ export default function Login() {
     try {
       await login(email, password)
       navigate('/')
-    } catch (error) {
+    } catch {
+      // Error is handled by AuthContext
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
+    if (!credentialResponse.credential) return
+    
+    setLoading(true)
+    try {
+      await googleLogin(credentialResponse.credential)
+      navigate('/')
+    } catch {
       // Error is handled by AuthContext
     } finally {
       setLoading(false)
@@ -41,7 +56,31 @@ export default function Login() {
             </Link>
           </p>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+
+        {/* Google Login Button */}
+        <div className="flex justify-center">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={() => console.error('Google login failed')}
+            theme="outline"
+            size="large"
+            text="signin_with"
+            shape="rectangular"
+            width={320}
+          />
+        </div>
+
+        {/* Divider */}
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300" />
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-gray-50 text-gray-500">Or continue with email</span>
+          </div>
+        </div>
+
+        <form className="space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
               <label htmlFor="email" className="sr-only">
@@ -91,4 +130,5 @@ export default function Login() {
     </div>
   )
 }
+
 

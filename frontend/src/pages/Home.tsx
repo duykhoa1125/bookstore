@@ -148,7 +148,7 @@ export default function Home() {
               {categories.map((category) => (
                 <Link
                   key={category.id}
-                  to={`/books?category=${category.id}`}
+                  to={`/books?categoryId=${category.id}`}
                   className="p-6 bg-white rounded-xl shadow-sm hover:shadow-xl transition-all transform hover:-translate-y-1 text-center border border-gray-100 group"
                 >
                   <div className="text-4xl mb-3">📚</div>

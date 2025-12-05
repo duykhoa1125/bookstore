@@ -2,6 +2,9 @@ import prisma from "../../config/database";
 import { PasswordUtil } from "../../utils/password.util";
 import { JwtUtil } from "../../utils/jwt.util";
 import { RegisterInput, LoginInput } from "./auth.dto";
+import { OAuth2Client } from "google-auth-library";
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 export class AuthService {
   async register(data: RegisterInput) {
@@ -60,6 +63,11 @@ export class AuthService {
       throw new Error("Invalid credentials");
     }
 
+    // Check if user has password (OAuth users don't have password)
+    if (!user.password) {
+      throw new Error("Please use Google login for this account");
+    }
+
     const isPasswordValid = await PasswordUtil.compare(
       data.password,
       user.password
@@ -75,6 +83,71 @@ export class AuthService {
     });
 
     //destructure to remove password from user object
+    const { password, ...userWithoutPassword } = user;
+    return { user: userWithoutPassword, token };
+  }
+
+  async googleLogin(credential: string) {
+    // Verify Google token
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    if (!payload) {
+      throw new Error("Invalid Google token");
+    }
+
+    const { sub: googleId, email, name, picture } = payload;
+
+    if (!email) {
+      throw new Error("Email not provided by Google");
+    }
+
+    // Find or create user
+    let user = await prisma.user.findFirst({
+      where: {
+        OR: [{ googleId }, { email }],
+      },
+    });
+
+    if (!user) {
+      // Create new user
+      const username = email.split("@")[0] + "_" + Date.now().toString(36);
+
+      user = await prisma.user.create({
+        data: {
+          email,
+          username,
+          fullName: name || email.split("@")[0],
+          googleId,
+          avatar: picture,
+          password: null, // OAuth users don't have password
+        },
+      });
+
+      // Create cart for new user
+      await prisma.cart.create({
+        data: { userId: user.id },
+      });
+    } else if (!user.googleId) {
+      // Link existing email account with Google
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          googleId,
+          avatar: picture || user.avatar,
+        },
+      });
+    }
+
+    const token = JwtUtil.sign({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
     const { password, ...userWithoutPassword } = user;
     return { user: userWithoutPassword, token };
   }

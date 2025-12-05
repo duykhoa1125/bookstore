@@ -7,6 +7,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  googleLogin: (credential: string) => Promise<void>;
   register: (data: RegisterInput) => Promise<void>;
   updateProfile: (data: { fullName?: string; phone?: string; address?: string }) => Promise<void>;
   logout: () => void;
@@ -69,6 +70,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const googleLogin = async (credential: string) => {
+    try {
+      const response = await api.googleLogin(credential);
+      if (response.success && response.data) {
+        const { user, token } = response.data;
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
+        setUser(user);
+        toast.success('Google login successful!');
+      }
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      const message = err.response?.data?.message || 'Google login failed';
+      toast.error(message);
+      throw error;
+    }
+  };
+
   const register = async (data: RegisterInput) => {
     try {
       const response = await api.register(data);
@@ -115,6 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         loading,
         login,
+        googleLogin,
         register,
         updateProfile,
         logout,

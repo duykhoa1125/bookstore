@@ -102,6 +102,14 @@ class ApiClient {
     return response.data;
   }
 
+  // Google OAuth
+  async googleLogin(
+    credential: string
+  ): Promise<ApiResponse<{ user: User; token: string }>> {
+    const response = await this.client.post("/auth/google", { credential });
+    return response.data;
+  }
+
   // Book endpoints
   async getBooks(params?: {
     categoryId?: string;

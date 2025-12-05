@@ -28,6 +28,17 @@ export class AuthController {
     }
   };
 
+  googleLogin = async (req: Request, res: Response) => {
+    try {
+      const { credential } = req.body;
+      const result = await this.authService.googleLogin(credential);
+      return ResponseUtil.success(res, result, "Google login successful");
+    } catch (error: any) {
+      console.error("Google login error:", error);
+      return ResponseUtil.error(res, error.message, 401);
+    }
+  };
+
   getProfile = async (req: Request, res: Response) => {
     try {
       const profile = await this.authService.getProfile(req.user!.id);
