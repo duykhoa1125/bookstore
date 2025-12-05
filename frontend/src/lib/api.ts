@@ -461,6 +461,32 @@ class ApiClient {
     const response = await this.client.delete(`/users/${id}`);
     return response.data;
   }
+
+  // Analytics endpoints for admin dashboard
+  async getRevenueByMonth(months?: number): Promise<ApiResponse<{ month: string; revenue: number }[]>> {
+    const response = await this.client.get("/analytics/revenue-by-month", { params: { months } });
+    return response.data;
+  }
+
+  async getOrdersByStatus(): Promise<ApiResponse<{ status: string; count: number }[]>> {
+    const response = await this.client.get("/analytics/orders-by-status");
+    return response.data;
+  }
+
+  async getSalesByCategory(): Promise<ApiResponse<{ name: string; totalSales: number; itemCount: number }[]>> {
+    const response = await this.client.get("/analytics/sales-by-category");
+    return response.data;
+  }
+
+  async getTopCustomers(limit?: number): Promise<ApiResponse<{ id: string; fullName: string; email: string; totalSpent: number; orderCount: number }[]>> {
+    const response = await this.client.get("/analytics/top-customers", { params: { limit } });
+    return response.data;
+  }
+
+  async getDashboardStats(): Promise<ApiResponse<{ totalUsers: number; totalBooks: number; totalOrders: number; totalRevenue: number }>> {
+    const response = await this.client.get("/analytics/dashboard-stats");
+    return response.data;
+  }
 }
 
 export const api = new ApiClient();

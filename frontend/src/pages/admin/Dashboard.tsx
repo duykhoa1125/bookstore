@@ -8,8 +8,33 @@ import {
   AlertTriangle,
   TrendingUp,
   TrendingDown,
-  Package
+  Package,
+  BookOpen,
+  Crown
 } from 'lucide-react'
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer
+} from 'recharts'
+
+const COLORS = ['#6366f1', '#22c55e', '#f59e0b', '#3b82f6', '#ef4444']
+const STATUS_COLORS: Record<string, string> = {
+  PENDING: '#f59e0b',
+  PROCESSING: '#3b82f6',
+  SHIPPED: '#22c55e',
+  DELIVERED: '#10b981',
+  CANCELLED: '#ef4444'
+}
 
 export default function AdminDashboardOverview() {
   // Fetch data for statistics
@@ -23,8 +48,33 @@ export default function AdminDashboardOverview() {
     queryFn: () => api.getBooks({}),
   })
 
+  // Analytics data
+  const { data: revenueByMonth } = useQuery({
+    queryKey: ['analytics-revenue'],
+    queryFn: () => api.getRevenueByMonth(6),
+  })
+
+  const { data: ordersByStatus } = useQuery({
+    queryKey: ['analytics-orders-status'],
+    queryFn: () => api.getOrdersByStatus(),
+  })
+
+  const { data: salesByCategory } = useQuery({
+    queryKey: ['analytics-sales-category'],
+    queryFn: () => api.getSalesByCategory(),
+  })
+
+  const { data: topCustomers } = useQuery({
+    queryKey: ['analytics-top-customers'],
+    queryFn: () => api.getTopCustomers(5),
+  })
+
   const orders = ordersData?.data || []
   const books = booksData?.data || []
+  const revenueData = revenueByMonth?.data || []
+  const ordersStatusData = ordersByStatus?.data || []
+  const categoryData = salesByCategory?.data || []
+  const topCustomersData = topCustomers?.data || []
 
   const {
     totalRevenue,
@@ -135,6 +185,12 @@ export default function AdminDashboardOverview() {
     }
   }
 
+  // Format month for display
+  const formattedRevenueData = revenueData.map(item => ({
+    ...item,
+    monthDisplay: new Date(item.month + '-01').toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
+  }))
+
   return (
     <div className="p-8 max-w-[1600px] mx-auto">
       {/* Header */}
@@ -144,7 +200,7 @@ export default function AdminDashboardOverview() {
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
-          <span>Last 30 Days</span>
+          <span>Last 6 Months</span>
         </div>
       </div>
 
@@ -173,6 +229,177 @@ export default function AdminDashboardOverview() {
             </div>
           )
         })}
+      </div>
+
+      {/* Charts Row 1: Revenue Trend & Orders by Status */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        {/* Revenue Trend Line Chart */}
+        <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-indigo-600" />
+              Revenue Trend
+            </h2>
+          </div>
+          <div className="h-[300px]">
+            {formattedRevenueData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={formattedRevenueData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="monthDisplay" stroke="#6b7280" fontSize={12} />
+                  <YAxis stroke="#6b7280" fontSize={12} tickFormatter={(value) => `$${value}`} />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#fff', 
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    }}
+                    formatter={(value: number) => [`$${value.toFixed(2)}`, 'Revenue']}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="revenue" 
+                    stroke="#6366f1" 
+                    strokeWidth={3}
+                    dot={{ fill: '#6366f1', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, stroke: '#4f46e5', strokeWidth: 2 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-500">
+                No revenue data available
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Orders by Status Pie Chart */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <ShoppingCart className="w-5 h-5 text-purple-600" />
+              Orders by Status
+            </h2>
+          </div>
+          <div className="h-[300px]">
+            {ordersStatusData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={ordersStatusData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={90}
+                    paddingAngle={2}
+                    dataKey="count"
+                    nameKey="status"
+                    label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                    labelLine={false}
+                  >
+                    {ordersStatusData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.status] || COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#fff', 
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px'
+                    }}
+                    formatter={(value: number, name: string) => [value, name]}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-500">
+                No order data available
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Charts Row 2: Sales by Category & Top Customers */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        {/* Sales by Category Bar Chart */}
+        <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-blue-600" />
+              Sales by Category
+            </h2>
+          </div>
+          <div className="h-[300px]">
+            {categoryData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={categoryData.slice(0, 8)} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis type="number" stroke="#6b7280" fontSize={12} tickFormatter={(value) => `$${value}`} />
+                  <YAxis 
+                    dataKey="name" 
+                    type="category" 
+                    stroke="#6b7280" 
+                    fontSize={11} 
+                    width={120}
+                    tick={{ fill: '#374151' }}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#fff', 
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px'
+                    }}
+                    formatter={(value: number) => [`$${value.toFixed(2)}`, 'Total Sales']}
+                  />
+                  <Bar dataKey="totalSales" fill="#3b82f6" radius={[0, 4, 4, 0]}>
+                    {categoryData.slice(0, 8).map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-500">
+                No sales data available
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Top Customers */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <Crown className="w-5 h-5 text-amber-500" />
+              Top Customers
+            </h2>
+          </div>
+          <div className="space-y-4">
+            {topCustomersData.length > 0 ? (
+              topCustomersData.map((customer, index) => (
+                <div key={customer.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
+                    index === 0 ? 'bg-amber-500' : index === 1 ? 'bg-gray-400' : index === 2 ? 'bg-amber-700' : 'bg-gray-300'
+                  }`}>
+                    {index + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 truncate">{customer.fullName}</p>
+                    <p className="text-xs text-gray-500 truncate">{customer.orderCount} orders</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-bold text-green-600">${customer.totalSpent.toFixed(2)}</p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-center text-sm text-gray-500 py-8">No customer data available</p>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

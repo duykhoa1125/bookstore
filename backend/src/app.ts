@@ -17,6 +17,7 @@ import authorRoutes from "./modules/authors/author.routes";
 import paymentMethodRoutes from "./modules/payment-methods/payment-method.routes";
 import paymentRoutes from "./modules/payments/payment.routes";
 import userRoutes from "./modules/users/user.routes";
+import analyticsRoutes from "./modules/analytics/analytics.routes";
 
 const app: Application = express();
 
@@ -28,11 +29,11 @@ app.use(
       if (ENV.NODE_ENV === 'development') {
         return callback(null, true);
       }
-      
+
       if (!origin) return callback(null, true);
-      
+
       const allowedOrigins = ENV.CORS_ALLOWED_ORIGINS;
-      
+
       if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
@@ -65,6 +66,7 @@ app.use("/api/authors", authorRoutes);
 app.use("/api/payment-methods", paymentMethodRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
 // 404 handler
 app.use((req, res) => ResponseUtil.error(res, "Route not found", 404));
