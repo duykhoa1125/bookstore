@@ -165,7 +165,15 @@ export class OrderService {
         confirmedBy: {
           select: { fullName: true, email: true, position: true },
         },
-        items: { include: { book: true } },
+        items: {
+          include: {
+            book: {
+              include: {
+                category: true,
+              },
+            },
+          },
+        },
         payment: { include: { paymentMethod: true } },
       },
       orderBy: { createdAt: "desc" },
