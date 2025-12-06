@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { 
@@ -10,7 +10,8 @@ import {
   TrendingDown,
   Package,
   BookOpen,
-  Crown
+  Crown,
+  Calendar
 } from 'lucide-react'
 import {
   LineChart,
@@ -24,6 +25,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  Legend,
   ResponsiveContainer
 } from 'recharts'
 
@@ -37,6 +39,9 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 export default function AdminDashboardOverview() {
+  const [timeRange, setTimeRange] = useState<'6M' | '30D' | '7D' | 'Yesterday'>('6M')
+  const [isTimeDropdownOpen, setIsTimeDropdownOpen] = useState(false)
+
   // Fetch data for statistics
   const { data: ordersData } = useQuery({
     queryKey: ['admin-orders'],
@@ -48,35 +53,15 @@ export default function AdminDashboardOverview() {
     queryFn: () => api.getBooks({}),
   })
 
-  // Analytics data
-  const { data: revenueByMonth } = useQuery({
-    queryKey: ['analytics-revenue'],
-    queryFn: () => api.getRevenueByMonth(6),
-  })
-
-  const { data: ordersByStatus } = useQuery({
-    queryKey: ['analytics-orders-status'],
-    queryFn: () => api.getOrdersByStatus(),
-  })
-
-  const { data: salesByCategory } = useQuery({
-    queryKey: ['analytics-sales-category'],
-    queryFn: () => api.getSalesByCategory(),
-  })
-
-  const { data: topCustomers } = useQuery({
-    queryKey: ['analytics-top-customers'],
-    queryFn: () => api.getTopCustomers(5),
-  })
-
   const orders = ordersData?.data || []
   const books = booksData?.data || []
-  const revenueData = revenueByMonth?.data || []
-  const ordersStatusData = ordersByStatus?.data || []
-  const categoryData = salesByCategory?.data || []
-  const topCustomersData = topCustomers?.data || []
 
   const {
+    filteredOrders,
+    revenueData,
+    ordersStatusData,
+    categoryData,
+    topCustomersData,
     totalRevenue,
     totalOrders,
     lowStockBooks,
@@ -84,28 +69,145 @@ export default function AdminDashboardOverview() {
     recentOrders,
     topSellingBooks
   } = useMemo(() => {
-    const revenue = orders.reduce((sum, order: any) => {
+    const now = new Date()
+    const filtered = orders.filter((order: any) => {
+      const orderDate = new Date(order.orderDate)
+      if (timeRange === '6M') {
+        const date = new Date(); date.setMonth(now.getMonth() - 6); date.setDate(1); date.setHours(0,0,0,0)
+        return orderDate >= date
+      }
+      if (timeRange === '30D') {
+        const date = new Date(); date.setDate(now.getDate() - 30); date.setHours(0,0,0,0)
+        return orderDate >= date
+      }
+      if (timeRange === '7D') {
+        const date = new Date(); date.setDate(now.getDate() - 7); date.setHours(0,0,0,0)
+        return orderDate >= date
+      }
+      if (timeRange === 'Yesterday') {
+        const start = new Date(); start.setDate(now.getDate() - 1); start.setHours(0,0,0,0)
+        const end = new Date(); end.setDate(now.getDate() - 1); end.setHours(23,59,59,999)
+        return orderDate >= start && orderDate <= end
+      }
+      return true
+    })
+
+    // 1. Revenue Data
+    const revenueMap = new Map<string, number>()
+    
+    // Initialize map with empty values to ensure continuity
+    if (timeRange === '6M') {
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(); d.setMonth(now.getMonth() - i);
+        const key = d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
+        revenueMap.set(key, 0)
+      }
+    } else if (timeRange === '30D' || timeRange === '7D') {
+      const days = timeRange === '30D' ? 30 : 7
+      for (let i = days - 1; i >= 0; i--) {
+        const d = new Date(); d.setDate(now.getDate() - i);
+        const key = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        revenueMap.set(key, 0)
+      }
+    } else if (timeRange === 'Yesterday') {
+      for (let i = 0; i < 24; i++) {
+        const key = `${i.toString().padStart(2, '0')}:00`
+        revenueMap.set(key, 0)
+      }
+    }
+
+    filtered.forEach((order: any) => {
+      if (order.payment?.status !== 'COMPLETED') return
+      const date = new Date(order.orderDate)
+      let key = ''
+      if (timeRange === '6M') {
+        key = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
+      } else if (timeRange === '30D' || timeRange === '7D') {
+        key = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      } else if (timeRange === 'Yesterday') {
+        key = `${date.getHours().toString().padStart(2, '0')}:00`
+      }
+      
+      if (revenueMap.has(key)) {
+        revenueMap.set(key, (revenueMap.get(key) || 0) + order.payment.total)
+      }
+    })
+
+    const revenue = Array.from(revenueMap.entries()).map(([monthDisplay, revenue]) => ({
+      monthDisplay,
+      revenue
+    }))
+
+    // 2. Orders Status
+    const statusMap = new Map<string, number>()
+    filtered.forEach((order: any) => {
+      statusMap.set(order.status, (statusMap.get(order.status) || 0) + 1)
+    })
+    const statusData = Array.from(statusMap.entries()).map(([status, count]) => ({
+      status,
+      count
+    }))
+
+    // 3. Sales by Category
+    const categoryMap = new Map<string, { name: string, totalSales: number }>()
+    filtered.forEach((order: any) => {
+      if (order.status === 'CANCELLED') return
+      order.items?.forEach((item: any) => {
+        const book = item.book || books.find((b: any) => b.id === item.bookId)
+        if (book?.category) {
+          const catName = book.category.name
+          const current = categoryMap.get(catName) || { name: catName, totalSales: 0 }
+          current.totalSales += (item.price || book.price) * item.quantity
+          categoryMap.set(catName, current)
+        }
+      })
+    })
+    const catData = Array.from(categoryMap.values())
+      .sort((a, b) => b.totalSales - a.totalSales)
+
+    // 4. Top Customers
+    const customerMap = new Map<string, { id: string, fullName: string, orderCount: number, totalSpent: number }>()
+    filtered.forEach((order: any) => {
+      if (order.status === 'CANCELLED' || order.payment?.status !== 'COMPLETED') return
+      const userId = order.userId
+      if (!userId) return
+      
+      const current = customerMap.get(userId) || { 
+        id: userId, 
+        fullName: order.user?.fullName || 'Unknown', 
+        orderCount: 0, 
+        totalSpent: 0 
+      }
+      current.orderCount += 1
+      current.totalSpent += order.payment.total
+      customerMap.set(userId, current)
+    })
+    const custData = Array.from(customerMap.values())
+      .sort((a, b) => b.totalSpent - a.totalSpent)
+      .slice(0, 5)
+
+    // 5. Stats
+    const totalRev = filtered.reduce((sum: number, order: any) => {
       const paymentTotal = order?.payment?.status === 'COMPLETED' ? order.payment.total : 0
       return sum + (paymentTotal || 0)
     }, 0)
 
-    const totalOrdersLocal = orders.length
-    const lowStock = books.filter(b => b.stock < 10).length
+    const totalOrd = filtered.length
+    const lowStock = books.filter((b: any) => b.stock < 10).length // This is global, not time dependent, but okay
 
-    // Unique customers from orders
     const customerIds = new Set<string>()
-    orders.forEach(o => { if (o.userId) customerIds.add(o.userId) })
+    filtered.forEach((o: any) => { if (o.userId) customerIds.add(o.userId) })
 
-    const recent = [...orders]
+    const recent = [...filtered]
       .sort((a: any, b: any) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime())
       .slice(0, 5)
 
     const salesMap = new Map<string, { quantity: number, book: any }>()
-    orders.forEach((order: any) => {
+    filtered.forEach((order: any) => {
       if (order.status === 'CANCELLED') return
       order.items?.forEach((item: any) => {
         const current = salesMap.get(item.bookId)
-        const bookRef = item.book || books.find(b => b.id === item.bookId)
+        const bookRef = item.book || books.find((b: any) => b.id === item.bookId)
         if (!bookRef) return
         if (current) {
           current.quantity += item.quantity
@@ -120,14 +222,21 @@ export default function AdminDashboardOverview() {
       .map(entry => ({ ...entry.book, sold: entry.quantity }))
 
     return {
-      totalRevenue: revenue,
-      totalOrders: totalOrdersLocal,
+      filteredOrders: filtered,
+      revenueData: revenue,
+      ordersStatusData: statusData,
+      categoryData: catData,
+      topCustomersData: custData,
+      totalRevenue: totalRev,
+      totalOrders: totalOrd,
       lowStockBooks: lowStock,
       uniqueCustomers: customerIds.size,
       recentOrders: recent,
       topSellingBooks: topSelling
     }
-  }, [orders, books])
+  }, [orders, books, timeRange])
+
+  const totalStatusOrders = ordersStatusData.reduce((acc: number, curr: any) => acc + (curr.count || 0), 0)
 
   const stats = [
     {
@@ -185,22 +294,57 @@ export default function AdminDashboardOverview() {
     }
   }
 
-  // Format month for display
-  const formattedRevenueData = revenueData.map(item => ({
-    ...item,
-    monthDisplay: new Date(item.month + '-01').toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
-  }))
-
   return (
     <div className="p-8 max-w-[1600px] mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Dashboard Overview</h1>
-        <div className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-          <span>Last 6 Months</span>
+        <div className="relative">
+          <button 
+            onClick={() => setIsTimeDropdownOpen(!isTimeDropdownOpen)}
+            className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white hover:bg-gray-50"
+          >
+            <Calendar className="w-4 h-4" />
+            <span>
+              {timeRange === '6M' ? 'Last 6 Months' : 
+               timeRange === '30D' ? 'Last Month' : 
+               timeRange === '7D' ? 'Last Week' : 'Yesterday'}
+            </span>
+            <svg className={`w-4 h-4 transition-transform ${isTimeDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          
+          {isTimeDropdownOpen && (
+            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-100">
+              <div className="py-1">
+                <button
+                  onClick={() => { setTimeRange('Yesterday'); setIsTimeDropdownOpen(false) }}
+                  className={`block w-full text-left px-4 py-2 text-sm ${timeRange === 'Yesterday' ? 'bg-gray-100 text-gray-900' : 'text-gray-700 hover:bg-gray-50'}`}
+                >
+                  Yesterday
+                </button>
+                <button
+                  onClick={() => { setTimeRange('7D'); setIsTimeDropdownOpen(false) }}
+                  className={`block w-full text-left px-4 py-2 text-sm ${timeRange === '7D' ? 'bg-gray-100 text-gray-900' : 'text-gray-700 hover:bg-gray-50'}`}
+                >
+                  Last Week
+                </button>
+                <button
+                  onClick={() => { setTimeRange('30D'); setIsTimeDropdownOpen(false) }}
+                  className={`block w-full text-left px-4 py-2 text-sm ${timeRange === '30D' ? 'bg-gray-100 text-gray-900' : 'text-gray-700 hover:bg-gray-50'}`}
+                >
+                  Last Month
+                </button>
+                <button
+                  onClick={() => { setTimeRange('6M'); setIsTimeDropdownOpen(false) }}
+                  className={`block w-full text-left px-4 py-2 text-sm ${timeRange === '6M' ? 'bg-gray-100 text-gray-900' : 'text-gray-700 hover:bg-gray-50'}`}
+                >
+                  Last 6 Months
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -242,9 +386,9 @@ export default function AdminDashboardOverview() {
             </h2>
           </div>
           <div className="h-[300px]">
-            {formattedRevenueData.length > 0 ? (
+            {revenueData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={formattedRevenueData}>
+                <LineChart data={revenueData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="monthDisplay" stroke="#6b7280" fontSize={12} />
                   <YAxis stroke="#6b7280" fontSize={12} tickFormatter={(value) => `$${value}`} />
@@ -285,19 +429,17 @@ export default function AdminDashboardOverview() {
           </div>
           <div className="h-[300px]">
             {ordersStatusData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="90%">
                 <PieChart>
                   <Pie
                     data={ordersStatusData}
                     cx="50%"
-                    cy="50%"
+                    cy="40%"
                     innerRadius={50}
                     outerRadius={90}
                     paddingAngle={2}
                     dataKey="count"
                     nameKey="status"
-                    label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
-                    labelLine={false}
                   >
                     {ordersStatusData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.status] || COLORS[index % COLORS.length]} />
@@ -310,6 +452,17 @@ export default function AdminDashboardOverview() {
                       borderRadius: '8px'
                     }}
                     formatter={(value: number, name: string) => [value, name]}
+                  />
+                  <Legend 
+                    verticalAlign="bottom" 
+                    height={36}
+                    formatter={(value, entry: any) => {
+                      const { payload } = entry;
+                      const percent = totalStatusOrders > 0 
+                        ? ((payload.count / totalStatusOrders) * 100).toFixed(0) 
+                        : 0;
+                      return <span className="text-xs text-gray-600 ml-1">{value} ({percent}%)</span>;
+                    }}
                   />
                 </PieChart>
               </ResponsiveContainer>
