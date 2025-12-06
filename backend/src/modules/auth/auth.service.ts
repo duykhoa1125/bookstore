@@ -38,6 +38,7 @@ export class AuthService {
         address: true,
         position: true,
         role: true,
+        avatar: true,
       },
     });
 
@@ -164,6 +165,7 @@ export class AuthService {
         address: true,
         position: true,
         role: true,
+        avatar: true,
         createdAt: true,
       },
     });
@@ -209,6 +211,7 @@ export class AuthService {
         address: true,
         position: true,
         role: true,
+        avatar: true,
         updatedAt: true,
       },
     });

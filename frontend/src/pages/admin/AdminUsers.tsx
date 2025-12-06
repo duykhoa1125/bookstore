@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { User } from '../../types'
 import { useState } from 'react'
-import { Edit, Trash2 } from 'lucide-react'
+import { Edit, Trash2, User as UserIcon } from 'lucide-react'
 import Modal from '../../components/Modal'
 import ConfirmModal from '../../components/ConfirmModal'
 
@@ -71,7 +71,26 @@ export default function AdminUsers() {
               {users.map(u => (
                 <tr key={u.id} className="hover:bg-blue-50/30 transition-colors group">
                   <td className="px-8 py-5 whitespace-nowrap">
-                    <div className="font-bold text-gray-900">{u.fullName}</div>
+                    <div className="flex items-center gap-3">
+                      {/* Avatar */}
+                      <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 bg-gray-100 border border-gray-200">
+                        {u.avatar ? (
+                          <img 
+                            src={u.avatar} 
+                            alt={u.fullName || 'User'} 
+                            className="w-full h-full object-cover" 
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-bold text-sm">
+                            {u.fullName?.charAt(0).toUpperCase() || <UserIcon className="w-5 h-5" />}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <div className="font-bold text-gray-900">{u.fullName || 'No name'}</div>
+                        <div className="text-xs text-gray-400">@{u.username}</div>
+                      </div>
+                    </div>
                   </td>
                   <td className="px-8 py-5 whitespace-nowrap text-sm text-gray-500 font-medium">
                     {u.email}
@@ -122,6 +141,27 @@ export default function AdminUsers() {
         title="Edit User"
       >
         <div className="space-y-6">
+          {/* User Avatar Preview */}
+          <div className="flex items-center gap-4 pb-4 border-b border-gray-100">
+            <div className="w-16 h-16 rounded-full overflow-hidden flex-shrink-0 bg-gray-100 border-2 border-gray-200 shadow-sm">
+              {selected?.avatar ? (
+                <img 
+                  src={selected.avatar} 
+                  alt={selected.fullName || 'User'} 
+                  className="w-full h-full object-cover" 
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-bold text-xl">
+                  {selected?.fullName?.charAt(0).toUpperCase() || <UserIcon className="w-8 h-8" />}
+                </div>
+              )}
+            </div>
+            <div>
+              <p className="font-bold text-gray-900 text-lg">{selected?.fullName || 'No name'}</p>
+              <p className="text-sm text-gray-500">@{selected?.username} • {selected?.email}</p>
+            </div>
+          </div>
+          
           <p className="text-sm text-gray-500">Update user details and permissions.</p>
           
           <div className="grid grid-cols-2 gap-5">

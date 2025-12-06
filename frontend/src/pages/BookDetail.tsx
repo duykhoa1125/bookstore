@@ -174,8 +174,8 @@ export default function BookDetail() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-12">
           <div className="lg:grid lg:grid-cols-2 lg:gap-x-12 xl:gap-x-16">
             {/* Image Gallery */}
-            <div className="product-image-container mb-8 lg:mb-0">
-              <div className="aspect-[3/4] rounded-2xl overflow-hidden bg-gray-100 shadow-xl border border-gray-100 relative group">
+            <div className="product-image-container mb-8 lg:mb-0 max-w-md mx-auto lg:mx-0">
+              <div className="aspect-[2/3] rounded-2xl overflow-hidden bg-gray-100 shadow-xl border border-gray-100 relative group">
                 {book.imageUrl ? (
                   <img
                     src={book.imageUrl}
@@ -184,7 +184,7 @@ export default function BookDetail() {
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <BookOpen className="h-32 w-32 text-gray-300" />
+                    <BookOpen className="h-24 w-24 text-gray-300" />
                   </div>
                 )}
                 {/* Badges */}

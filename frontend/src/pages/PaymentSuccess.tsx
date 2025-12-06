@@ -1,6 +1,6 @@
-import { useEffect } from 'react'
-import { Link, useParams, useNavigate } from 'react-router-dom'
-import { Check, ShoppingBag, ArrowRight, Download } from 'lucide-react'
+
+import { Link, useParams } from 'react-router-dom'
+import { Check, ShoppingBag, ArrowRight } from 'lucide-react'
 
 export default function PaymentSuccess() {
   const { orderId } = useParams<{ orderId: string }>()

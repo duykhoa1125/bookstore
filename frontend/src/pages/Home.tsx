@@ -5,12 +5,26 @@ import { BookOpen, Award, Sparkles, ArrowRight, ChevronLeft, ChevronRight, Mail,
 import { BookCard } from '../components/BookCard'
 import toast from 'react-hot-toast'
 import { useAuth } from '../contexts/AuthContext'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { GlowEffect } from '../components/effects/GlowEffect'
+import { CustomerReviews } from '../components/CustomerReviews'
+import { QuickViewModal } from '../components/QuickViewModal'
+import { AuthorSpotlight } from '../components/AuthorSpotlight'
+import { StatsMilestones } from '../components/StatsMilestones'
+import { Book } from '../types'
 
 export default function Home() {
   const { user } = useAuth()
   const queryClient = useQueryClient()
   const [currentSlide, setCurrentSlide] = useState(0)
+  
+  // Quick View Modal state
+  const [quickViewBook, setQuickViewBook] = useState<Book | null>(null)
+  const [isQuickViewOpen, setIsQuickViewOpen] = useState(false)
+  
+  // Parallax refs
+  const parallaxRef = useRef<HTMLDivElement>(null)
+  const [scrollY, setScrollY] = useState(0)
 
   const { data: booksData, isLoading, error } = useQuery({
     queryKey: ['books', 'featured'],
@@ -34,6 +48,15 @@ export default function Home() {
     }, 5000)
     return () => clearInterval(timer)
   }, [heroBooks.length])
+  
+  // Parallax scroll effect
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrollY(window.scrollY)
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % heroBooks.length)
@@ -53,6 +76,7 @@ export default function Home() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cart'] })
       toast.success('Book added to cart!')
+      setIsQuickViewOpen(false) // Close modal after adding to cart
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to add to cart')
@@ -67,12 +91,18 @@ export default function Home() {
     }
     addToCartMutation.mutate(bookId)
   }
+  
+  const handleQuickView = (book: Book) => {
+    setQuickViewBook(book)
+    setIsQuickViewOpen(true)
+  }
 
   const featuredBooks = (booksData?.data || []).slice(0, 8)
   const categories = (categoriesData?.data || []).slice(0, 6)
 
   return (
-    <div className="bg-white">
+    <GlowEffect>
+      <div className="relative">
       {/* Hero Slideshow */}
       <section className="relative h-[600px] lg:h-[700px] overflow-hidden bg-[#0a0a0a] group">
         {heroBooks.length > 0 ? (
@@ -197,7 +227,7 @@ export default function Home() {
       </section>
 
       {/* Features Grid */}
-      <section className="py-16 bg-gray-50 border-b border-gray-100">
+      <section className="py-16 bg-white/40 backdrop-blur-sm border-b border-white/20">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="flex items-center gap-4 p-6 bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
@@ -232,7 +262,7 @@ export default function Home() {
       </section>
 
       {/* Featured Books Section */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-transparent">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-between mb-12 gap-4">
             <div>
@@ -264,6 +294,7 @@ export default function Home() {
                   book={book} 
                   onAddToCart={handleAddToCart}
                   isAddingToCart={addToCartMutation.isPending}
+                  onQuickView={handleQuickView}
                 />
               ))}
             </div>
@@ -272,7 +303,7 @@ export default function Home() {
       </section>
 
       {/* Categories Modern Grid */}
-      <section className="py-20 bg-white border-t border-gray-100">
+      <section className="py-20 bg-transparent border-t border-gray-100/50">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-gray-900 mb-10 text-center">Browse by Genre</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -298,9 +329,79 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Stats & Milestones Section */}
+      <StatsMilestones />
+
+      {/* Author Spotlight Section */}
+      <AuthorSpotlight />
+
+      {/* Customer Reviews Section */}
+      <CustomerReviews />
+
+      {/* Parallax Decorative Section */}
+      <section 
+        ref={parallaxRef}
+        className="relative py-32 overflow-hidden bg-gradient-to-br from-blue-50 via-white to-purple-50"
+      >
+        {/* Floating decorative elements with parallax */}
+        <div 
+          className="absolute top-20 left-[10%] w-20 h-20 bg-blue-400/30 rounded-full blur-xl animate-float"
+          style={{ transform: `translateY(${scrollY * 0.1}px)` }}
+        />
+        <div 
+          className="absolute top-40 right-[15%] w-32 h-32 bg-purple-400/20 rounded-full blur-2xl animate-float"
+          style={{ transform: `translateY(${scrollY * 0.15}px)`, animationDelay: '1s' }}
+        />
+        <div 
+          className="absolute bottom-20 left-[20%] w-16 h-16 bg-teal-400/30 rounded-full blur-xl animate-float"
+          style={{ transform: `translateY(${scrollY * 0.08}px)`, animationDelay: '2s' }}
+        />
+        <div 
+          className="absolute bottom-40 right-[25%] w-24 h-24 bg-amber-400/20 rounded-full blur-2xl animate-float"
+          style={{ transform: `translateY(${scrollY * 0.12}px)`, animationDelay: '0.5s' }}
+        />
+        
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="text-center max-w-3xl mx-auto">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+              Your Reading Journey
+              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+                Starts Here
+              </span>
+            </h2>
+            <p className="text-xl text-gray-600 mb-10">
+              Explore thousands of books, discover new authors, and find your next favorite read.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                to="/books"
+                className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-full shadow-xl hover:shadow-2xl hover:shadow-purple-500/30 transition-all hover:-translate-y-1"
+              >
+                Browse All Books
+              </Link>
+              <Link
+                to="/books?sortBy=rating&order=desc"
+                className="px-8 py-4 bg-white text-gray-900 font-bold rounded-full border border-gray-200 shadow-sm hover:shadow-lg hover:border-gray-300 transition-all hover:-translate-y-1"
+              >
+                Top Rated Books
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Newsletter Section */}
       <section className="py-24 bg-gray-900 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-blue-900/20 to-transparent pointer-events-none"></div>
+        {/* Parallax floating elements in newsletter */}
+        <div 
+          className="absolute top-10 left-10 w-4 h-4 bg-blue-400 rounded-full opacity-50"
+          style={{ transform: `translateY(${scrollY * 0.05}px)` }}
+        />
+        <div 
+          className="absolute bottom-20 right-20 w-3 h-3 bg-purple-400 rounded-full opacity-50"
+          style={{ transform: `translateY(${scrollY * 0.03}px)` }}
+        />
         <div className="container mx-auto px-4 relative z-10">
            <div className="max-w-4xl mx-auto text-center">
               <div className="inline-flex items-center justify-center p-3 bg-white/10 rounded-2xl mb-8 backdrop-blur-sm">
@@ -325,7 +426,17 @@ export default function Home() {
            </div>
         </div>
       </section>
-    </div>
+      </div>
+      
+      {/* Quick View Modal */}
+      <QuickViewModal
+        book={quickViewBook}
+        isOpen={isQuickViewOpen}
+        onClose={() => setIsQuickViewOpen(false)}
+        onAddToCart={handleAddToCart}
+        isAddingToCart={addToCartMutation.isPending}
+      />
+    </GlowEffect>
   )
 }
 
