@@ -1,76 +1,90 @@
-import { useState, useEffect } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useState, useEffect, useMemo } from 'react'
+import { useSearchParams, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
-import { BookOpen, Search, Star, Filter, ShoppingCart } from 'lucide-react'
+import { Search, Filter, ChevronDown, ChevronLeft, ChevronRight, X, Star, SlidersHorizontal, Tag, DollarSign, Sparkles } from 'lucide-react'
+import { BookCard } from '../components/BookCard'
 import toast from 'react-hot-toast'
 import { useAuth } from '../contexts/AuthContext'
 
+// Accordion Section Component
+interface AccordionSectionProps {
+  title: string
+  icon: React.ReactNode
+  children: React.ReactNode
+  defaultOpen?: boolean
+}
+
+function AccordionSection({ title, icon, children, defaultOpen = true }: AccordionSectionProps) {
+  const [isOpen, setIsOpen] = useState(defaultOpen)
+  
+  return (
+    <div className="border-b border-gray-100/50 last:border-b-0">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between py-4 px-1 group"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500/10 to-purple-500/10 flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform duration-200">
+            {icon}
+          </div>
+          <span className="font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">{title}</span>
+        </div>
+        <ChevronDown 
+          className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} 
+        />
+      </button>
+      <div 
+        className={`overflow-hidden transition-all duration-300 ease-in-out ${
+          isOpen ? 'max-h-96 opacity-100 pb-4' : 'max-h-0 opacity-0'
+        }`}
+      >
+        {children}
+      </div>
+    </div>
+  )
+}
 
 export default function Books() {
   const { user } = useAuth()
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '')
-  const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get('categoryId') || '')
-  const [sortBy, setSortBy] = useState<string>(searchParams.get('sortBy') || '')
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(
-    (searchParams.get('order') as 'asc' | 'desc') || 'desc'
-  )
+  
+  // URL Params State
+  const urlSearch = searchParams.get('search') || ''
+  const urlCategory = searchParams.get('categoryId') || ''
+  
+  // Local State for Filters
+  const [searchTerm, setSearchTerm] = useState(urlSearch)
+  const [selectedCategory, setSelectedCategory] = useState<string>(urlCategory)
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000])
+  const [minRating, setMinRating] = useState<number>(0)
+  const [sortBy, setSortBy] = useState<string>('newest') // newest, price-asc, price-desc, rating-desc
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 8
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false)
+  const [hoverRating, setHoverRating] = useState<number>(0)
 
-  // Update local state if URL changes externally (e.g. header search while on page)
+  // Sync state with URL
   useEffect(() => {
-    const paramSearch = searchParams.get('search') || ''
-    const paramCategory = searchParams.get('categoryId') || ''
-    const paramSortBy = searchParams.get('sortBy') || ''
-    const paramOrder = (searchParams.get('order') as 'asc' | 'desc') || 'desc'
-    if (paramSearch !== searchTerm) setSearchTerm(paramSearch)
-    if (paramCategory !== selectedCategory) setSelectedCategory(paramCategory)
-    if (paramSortBy !== sortBy) setSortBy(paramSortBy)
-    if (paramOrder !== sortOrder) setSortOrder(paramOrder)
-  }, [searchParams])
+    setSearchTerm(urlSearch)
+    setSelectedCategory(urlCategory)
+  }, [urlSearch, urlCategory])
 
-  const applyParams = (
-    nextSearch: string,
-    nextCategory: string,
-    nextSortBy: string,
-    nextOrder: 'asc' | 'desc'
-  ) => {
-    const params: Record<string, string> = {}
-    const trimmed = nextSearch.trim()
-    if (trimmed) params.search = trimmed
-    if (nextCategory) params.categoryId = nextCategory
-    if (nextSortBy) {
-      params.sortBy = nextSortBy
-      if (nextOrder) params.order = nextOrder
-    }
-    setSearchParams(params)
-  }
-
-  const { data: booksData, isLoading: booksLoading, error: booksError } = useQuery({
-    queryKey: ['books', selectedCategory, searchTerm, sortBy, sortOrder],
-    queryFn: () =>
-      api.getBooks({
-        categoryId: selectedCategory || undefined,
-        search: searchTerm || undefined,
-        sortBy: (sortBy as 'price' | 'rating') || undefined,
-        order: (sortBy ? sortOrder : undefined) as 'asc' | 'desc' | undefined,
-      }),
-    retry: (failureCount, error: any) => {
-      if (error?.response?.status === 429) {
-        return false;
-      }
-      return failureCount < 1;
-    },
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+  // Fetch Data
+  const { data: booksData, isLoading: booksLoading } = useQuery({
+    queryKey: ['books'], // Fetch all and filter client side for better UX with small dataset
+    queryFn: () => api.getBooks(),
+    staleTime: 1000 * 60 * 5, // 5 minutes
   })
 
   const { data: categoriesData } = useQuery({
     queryKey: ['categories'],
     queryFn: () => api.getCategories(),
-    retry: 1,
+    staleTime: 1000 * 60 * 60,
   })
 
+  // Add to Cart Mutation
   const addToCartMutation = useMutation({
     mutationFn: (bookId: string) => api.addToCart({ bookId, quantity: 1 }),
     onSuccess: () => {
@@ -83,7 +97,7 @@ export default function Books() {
   })
 
   const handleAddToCart = (e: React.MouseEvent, bookId: string) => {
-    e.preventDefault() // Prevent navigation to book detail
+    e.preventDefault()
     if (!user) {
       toast.error('Please login to add items to cart')
       return
@@ -91,346 +105,539 @@ export default function Books() {
     addToCartMutation.mutate(bookId)
   }
 
-  const books = booksData?.data || []
-  const categories = categoriesData?.data || []
+  // Filter & Sort Logic
+  const filteredBooks = useMemo(() => {
+    let result = booksData?.data || []
 
+    // 1. Search
+    if (searchTerm) {
+      const lowerTerm = searchTerm.toLowerCase()
+      result = result.filter(book => 
+        book.title.toLowerCase().includes(lowerTerm) || 
+        book.description?.toLowerCase().includes(lowerTerm) ||
+        book.authors?.some(a => a.author.name.toLowerCase().includes(lowerTerm))
+      )
+    }
+
+    // 2. Category
+    if (selectedCategory) {
+      result = result.filter(book => book.categoryId === selectedCategory)
+    }
+
+    // 3. Price Range (Client-side)
+    result = result.filter(book => book.price >= priceRange[0] && book.price <= priceRange[1])
+
+    // 4. Rating (Client-side)
+    if (minRating > 0) {
+      result = result.filter(book => (book.averageRating || 0) >= minRating)
+    }
+
+    // 5. Sorting
+    switch (sortBy) {
+      case 'price-asc':
+        result.sort((a, b) => a.price - b.price)
+        break
+      case 'price-desc':
+        result.sort((a, b) => b.price - a.price)
+        break
+      case 'rating-desc':
+        result.sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0))
+        break
+      case 'newest':
+      default:
+        // Assuming recently added books have higher IDs or createdAt if available
+        // If no createdAt, we might leave as is or sort by ID
+        result.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
+        break
+    }
+
+    return result
+  }, [booksData, searchTerm, selectedCategory, priceRange, minRating, sortBy])
+
+  // Pagination Logic
+  const totalPages = Math.ceil(filteredBooks.length / itemsPerPage)
+  const paginatedBooks = filteredBooks.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  )
+
+  // Handlers
+  const updateUrl = (key: string, value: string) => {
+    setSearchParams(prev => {
+      if (value) prev.set(key, value)
+      else prev.delete(key)
+      return prev
+    })
+    setCurrentPage(1)
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-12">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">Discover Your Next Read</h1>
-            <p className="text-lg text-blue-100">Explore our collection of amazing books across all genres</p>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-gray-50 pb-20">
+      
+      
 
-      {/* Search and Filter Section */}
-      <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm shadow-md border-b border-gray-200">
-        <div className="container mx-auto px-4 py-4">
-          <div className="mb-4">
-            <div className="flex items-center gap-3 max-w-6xl mx-auto">
-              {/* Search bar on the right */}
-              <div className="relative flex-1">
-                <Search className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="search"
-                  placeholder="Search by title, author, publisher, or description..."
-                  value={searchTerm}
-                  onChange={(e) => {
-                    const v = e.target.value
-                    setSearchTerm(v)
-                    applyParams(v, selectedCategory, sortBy, sortOrder)
-                  }}
-                  className="w-full pl-12 pr-4 py-3.5 border border-gray-300 rounded-full shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-900 placeholder-gray-400"
-                />
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <span className="text-sm text-gray-600">Sort:</span>
-                {/* Price sort button cycles asc -> desc -> none */}
-                <button
-                  onClick={() => {
-                    if (sortBy !== 'price') {
-                      setSortBy('price')
-                      setSortOrder('asc')
-                      applyParams(searchTerm, selectedCategory, 'price', 'asc')
-                    } else if (sortOrder === 'asc') {
-                      setSortOrder('desc')
-                      applyParams(searchTerm, selectedCategory, 'price', 'desc')
-                    } else {
-                      setSortBy('')
-                      applyParams(searchTerm, selectedCategory, '', sortOrder)
-                    }
-                  }}
-                  className={`px-3 py-2 rounded-full text-sm font-medium border transition-all ${
-                    sortBy === 'price'
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                  }`}
-                  title={`Cycle price sort (asc → desc → none)`}
-                >
-                  Price {sortBy === 'price' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}
-                </button>
-                {/* Rating sort button cycles asc -> desc -> none */}
-                <button
-                  onClick={() => {
-                    if (sortBy !== 'rating') {
-                      setSortBy('rating')
-                      setSortOrder('asc')
-                      applyParams(searchTerm, selectedCategory, 'rating', 'asc')
-                    } else if (sortOrder === 'asc') {
-                      setSortOrder('desc')
-                      applyParams(searchTerm, selectedCategory, 'rating', 'desc')
-                    } else {
-                      // none
-                      setSortBy('')
-                      applyParams(searchTerm, selectedCategory, '', sortOrder)
-                    }
-                  }}
-                  className={`px-3 py-2 rounded-full text-sm font-medium border transition-all ${
-                    sortBy === 'rating'
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                  }`}
-                  title={`Cycle rating sort (asc → desc → none)`}
-                >
-                  Rating {sortBy === 'rating' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Category Filter */}
-          <div className="flex flex-wrap items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
-            <div className="flex items-center gap-2 text-gray-600 px-2 flex-shrink-0">
-              <Filter className="w-4 h-4" />
-              <span className="text-sm font-medium">Filter:</span>
-            </div>
-            <button
-              onClick={() => {
-                setSelectedCategory('')
-                applyParams(searchTerm, '', sortBy, sortOrder)
-              }}
-              className={`px-4 py-2 rounded-full font-medium text-sm whitespace-nowrap transition-all flex-shrink-0 ${
-                selectedCategory === ''
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              All Books
-            </button>
-            {categories.map((category) => (
-              <button
-                key={category.id}
-                onClick={() => {
-                  setSelectedCategory(category.id)
-                  applyParams(searchTerm, category.id, sortBy, sortOrder)
-                }}
-                className={`px-4 py-2 rounded-full font-medium text-sm whitespace-nowrap transition-all flex-shrink-0 ${
-                  selectedCategory === category.id
-                    ? 'bg-blue-600 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {category.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
-        {/* Results Header */}
-        {!booksLoading && !booksError && (
-          <div className="mb-6 flex items-center justify-between">
-            <p className="text-gray-600">
-              {books.length === 0 ? (
-                'No books found'
-              ) : (
-                <>
-                  Showing <span className="font-semibold text-gray-900">{books.length}</span> {books.length === 1 ? 'book' : 'books'}
-                  {searchTerm && (
-                    <> for "<span className="font-semibold text-gray-900">{searchTerm}</span>"</>
-                  )}
-                </>
-              )}
-            </p>
-          </div>
-        )}
-
-        {/* Error Messages */}
-        {booksError && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-xl mb-6 max-w-2xl mx-auto">
-            <p className="font-semibold text-lg mb-1">Error loading books</p>
-            <p className="text-sm">
-              {booksError instanceof Error
-                ? booksError.message
-                : 'Failed to connect to backend. Make sure the backend is running on http://localhost:3000'}
-            </p>
-            {(booksError as any)?.response?.status === 429 && (
-              <p className="text-xs mt-2 text-orange-700">
-                ⚠️ Rate limit exceeded. Please wait a moment and refresh the page.
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Books Grid */}
-        {booksLoading ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-600 border-t-transparent mb-4"></div>
-            <p className="text-gray-600 text-lg">Loading amazing books...</p>
-          </div>
-        ) : booksError ? (
-          <div className="text-center py-20">
-            <BookOpen className="w-20 h-20 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-600 text-xl font-semibold mb-2">Failed to load books</p>
-            <p className="text-gray-500">
-              Please check that the backend is running and try refreshing the page
-            </p>
-          </div>
-        ) : books.length === 0 ? (
-          <div className="text-center py-20">
-            <BookOpen className="w-20 h-20 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-600 text-xl font-semibold mb-2">No books found</p>
-            <p className="text-gray-500 mb-4">
-              {searchTerm || selectedCategory
-                ? 'Try adjusting your search or filters'
-                : 'The database might be empty'}
-            </p>
-            {!searchTerm && !selectedCategory && (
-              <p className="text-sm text-gray-400">
-                Try running: <code className="bg-gray-100 px-2 py-1 rounded">npm run prisma:seed</code> in the backend directory
-              </p>
-            )}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {books.map((book) => {
-              const averageRating = book.averageRating || 0
-              const hasRating = averageRating > 0
-              
-              return (
-                <div
-                  key={book.id}
-                  className="group bg-white rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-200 hover:border-blue-200 transform hover:-translate-y-2 flex flex-col"
-                >
-                  <Link to={`/books/${book.id}`} className="block relative">
-                    <div className="relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
-                      {book.imageUrl ? (
-                        <img
-                          src={book.imageUrl}
-                          alt={book.title}
-                          className="w-full h-72 object-cover group-hover:scale-110 transition-transform duration-500"
-                        />
-                      ) : (
-                        <div className="w-full h-72 flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50">
-                          <BookOpen className="w-20 h-20 text-blue-200" />
-                        </div>
-                      )}
-                      
-                      {/* Stock badge */}
-                      {book.stock === 0 && (
-                        <div className="absolute top-3 right-3 bg-red-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg">
-                          Sold Out
-                        </div>
-                      )}
-                      {book.stock > 0 && book.stock < 5 && (
-                        <div className="absolute top-3 right-3 bg-orange-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg">
-                          Only {book.stock} left
-                        </div>
-                      )}
-                      
-                      {/* Rating badge overlay */}
-                      {hasRating && (
-                        <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-sm px-2.5 py-1.5 rounded-lg shadow-lg">
-                          <div className="flex items-center gap-1">
-                            <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                            <span className="text-sm font-bold text-gray-900">
-                              {averageRating.toFixed(1)}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </Link>
+        <div className="flex flex-col lg:flex-row gap-8">
+          
+          {/* Sidebar Filters (Desktop & Mobile) */}
+          <aside className={`
+            fixed inset-0 z-40 bg-white/95 backdrop-blur-xl lg:bg-transparent lg:backdrop-blur-none lg:static lg:z-10 lg:w-80 lg:min-w-[320px] lg:block overflow-y-auto lg:overflow-visible transition-all duration-500 ease-out
+            ${isMobileFiltersOpen ? 'translate-x-0 opacity-100' : '-translate-x-full lg:translate-x-0 opacity-0 lg:opacity-100'}
+          `}>
+             <div className="p-6 lg:p-0 lg:sticky lg:top-24 h-full">
+                
+                {/* Filter Card Container - Glassmorphism */}
+                <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl shadow-gray-200/50 border border-white/50 overflow-hidden">
                   
-                  <div className="p-5 flex flex-col flex-grow">
-                    <Link to={`/books/${book.id}`} className="flex-grow">
-                      {/* Category badge */}
-                      {book.category && (
-                        <span className="inline-block px-3 py-1 bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 text-xs font-bold rounded-full mb-3 border border-blue-100">
-                          {book.category.name}
-                        </span>
-                      )}
-                      
-                      {/* Book title */}
-                      <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors leading-snug">
-                        {book.title}
-                      </h3>
-                      
-                      {/* Authors */}
-                      {book.authors && book.authors.length > 0 && (
-                        <p className="text-sm text-gray-600 mb-3 line-clamp-1">
-                          by {book.authors.map((a) => a.author.name).join(', ')}
-                        </p>
-                      )}
-                      
-                      {/* Rating display */}
-                      <div>
-                        {hasRating ? (
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-1">
-                              {[1, 2, 3, 4, 5].map((star) => (
-                                <Star
-                                  key={star}
-                                  className={`w-4 h-4 ${
-                                    star <= Math.round(averageRating)
-                                      ? 'fill-yellow-400 text-yellow-400'
-                                      : 'fill-gray-200 text-gray-200'
-                                  }`}
-                                />
-                              ))}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-1">
-                              {[1, 2, 3, 4, 5].map((star) => (
-                                <Star
-                                  key={star}
-                                  className="w-4 h-4 fill-gray-200 text-gray-200"
-                                />
-                              ))}
-                            </div>
-                            <p className="text-xs text-gray-400">No reviews yet</p>
-                          </div>
-                        )}
-                      </div>
-                      {/* Stocks */}
-                      <div className="mt-2 mb-4">
-                        <div className="flex items-center min-h-[32px]">
-                          {book.stock >= 20 ? (
-                            <span className="text-xs text-green-600 font-medium">In Stock</span>
-                          ) : book.stock > 0 ? (
-                            <span className="text-xs text-orange-600 font-medium">{book.stock} left in stock</span>
-                          ) : (
-                            <span className="text-xs text-red-600 font-medium">Out of Stock</span>
-                          )}
+                  {/* Header */}
+                  <div className="bg-slate-900 p-5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                          <SlidersHorizontal className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <h2 className="text-lg font-bold text-white">Filters</h2>
+                          <p className="text-xs text-white/70">Refine your search</p>
                         </div>
                       </div>
-                    </Link>
-                    
-                    {/* Price and CTA */}
-                    <div className="mt-auto space-y-3">
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-bold text-gray-900">
-                          ${book.price.toFixed(2)}
-                        </span>
-                      </div>
-                      
-                      <button
-                        onClick={(e) => handleAddToCart(e, book.id)}
-                        disabled={book.stock === 0 || addToCartMutation.isPending}
-                        className={`w-full px-4 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-sm ${
-                          book.stock === 0
-                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                            : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 active:scale-95 shadow-md hover:shadow-lg'
-                        }`}
+                      <button 
+                        onClick={() => setIsMobileFiltersOpen(false)} 
+                        className="lg:hidden p-2 hover:bg-white/20 rounded-full transition-colors"
                       >
-                        <ShoppingCart className="w-5 h-5" />
-                        {book.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
+                        <X className="w-5 h-5 text-white" />
                       </button>
                     </div>
                   </div>
+
+                  {/* Active Filters Badges */}
+                  {(searchTerm || selectedCategory || minRating > 0 || priceRange[0] > 0 || priceRange[1] < 1000) && (
+                    <div className="px-5 py-3 bg-slate-50 border-b border-gray-100">
+                      <div className="flex flex-wrap gap-2">
+                        {searchTerm && (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full text-xs font-medium text-gray-700 shadow-sm border border-gray-100 group hover:border-red-200 transition-colors">
+                            <Search className="w-3 h-3 text-blue-500" />
+                            "{searchTerm.length > 10 ? searchTerm.slice(0, 10) + '...' : searchTerm}"
+                            <button 
+                              onClick={() => { setSearchTerm(''); updateUrl('search', '') }}
+                              className="ml-1 text-gray-400 hover:text-red-500 transition-colors"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </span>
+                        )}
+                        {selectedCategory && (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full text-xs font-medium text-gray-700 shadow-sm border border-gray-100 group hover:border-red-200 transition-colors">
+                            <Tag className="w-3 h-3 text-purple-500" />
+                            {categoriesData?.data?.find(c => c.id === selectedCategory)?.name || 'Category'}
+                            <button 
+                              onClick={() => { setSelectedCategory(''); updateUrl('categoryId', '') }}
+                              className="ml-1 text-gray-400 hover:text-red-500 transition-colors"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </span>
+                        )}
+                        {minRating > 0 && (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full text-xs font-medium text-gray-700 shadow-sm border border-gray-100 group hover:border-red-200 transition-colors">
+                            <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                            {minRating}+ Stars
+                            <button 
+                              onClick={() => setMinRating(0)}
+                              className="ml-1 text-gray-400 hover:text-red-500 transition-colors"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </span>
+                        )}
+                        {(priceRange[0] > 0 || priceRange[1] < 1000) && (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full text-xs font-medium text-gray-700 shadow-sm border border-gray-100 group hover:border-red-200 transition-colors">
+                            <DollarSign className="w-3 h-3 text-green-500" />
+                            ${priceRange[0]} - ${priceRange[1]}
+                            <button 
+                              onClick={() => setPriceRange([0, 1000])}
+                              className="ml-1 text-gray-400 hover:text-red-500 transition-colors"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Filter Sections Container */}
+                  <div className="p-5 space-y-1">
+                    
+                    {/* Search Section */}
+                    <AccordionSection title="Search" icon={<Search className="w-4 h-4" />}>
+                      <div className="relative group">
+                        <div className="absolute inset-0 bg-slate-200 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-xl -z-10"></div>
+                        <div className="relative">
+                          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-blue-500 transition-colors pointer-events-none" />
+                          <input
+                            type="text"
+                            value={searchTerm}
+                            onChange={(e) => {
+                              setSearchTerm(e.target.value)
+                              updateUrl('search', e.target.value)
+                            }}
+                            placeholder="Title, author, keyword..."
+                            className="w-full !pl-14 pr-4 py-3 bg-gray-50/80 border-2 border-gray-100 rounded-xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all duration-300 outline-none text-sm placeholder:text-gray-400"
+                          />
+                          {searchTerm && (
+                            <button 
+                              onClick={() => { setSearchTerm(''); updateUrl('search', '') }}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-200 rounded-full transition-colors"
+                            >
+                              <X className="w-4 h-4 text-gray-400" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </AccordionSection>
+
+                    {/* Categories Section */}
+                    <AccordionSection title="Categories" icon={<Tag className="w-4 h-4" />}>
+                      <div className="space-y-1 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                        {/* All Categories Option */}
+                        <label 
+                          htmlFor="cat-all"
+                          className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-200 group ${
+                            selectedCategory === '' 
+                              ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/10' 
+                              : 'hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                            selectedCategory === '' 
+                              ? 'border-white bg-white' 
+                              : 'border-gray-300 group-hover:border-blue-400'
+                          }`}>
+                            {selectedCategory === '' && (
+                              <div className="w-2.5 h-2.5 rounded-full bg-slate-900"></div>
+                            )}
+                          </div>
+                          <input
+                            type="radio"
+                            id="cat-all"
+                            name="category"
+                            checked={selectedCategory === ''}
+                            onChange={() => {
+                              setSelectedCategory('')
+                              updateUrl('categoryId', '')
+                            }}
+                            className="sr-only"
+                          />
+                          <span className={`text-sm font-medium ${selectedCategory === '' ? 'text-white' : 'text-gray-700'}`}>
+                            All Categories
+                          </span>
+                          <Sparkles className={`w-4 h-4 ml-auto ${selectedCategory === '' ? 'text-white/70' : 'text-gray-300'}`} />
+                        </label>
+
+                        {categoriesData?.data?.map((cat) => (
+                          <label 
+                            key={cat.id}
+                            htmlFor={`cat-${cat.id}`}
+                            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-200 group ${
+                              selectedCategory === cat.id 
+                                ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/10' 
+                                : 'hover:bg-gray-50'
+                            }`}
+                          >
+                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                              selectedCategory === cat.id 
+                                ? 'border-white bg-white' 
+                                : 'border-gray-300 group-hover:border-blue-400'
+                            }`}>
+                              {selectedCategory === cat.id && (
+                                <div className="w-2.5 h-2.5 rounded-full bg-slate-900"></div>
+                              )}
+                            </div>
+                            <input
+                              type="radio"
+                              id={`cat-${cat.id}`}
+                              name="category"
+                              checked={selectedCategory === cat.id}
+                              onChange={() => {
+                                setSelectedCategory(cat.id)
+                                updateUrl('categoryId', cat.id)
+                              }}
+                              className="sr-only"
+                            />
+                            <span className={`text-sm font-medium ${selectedCategory === cat.id ? 'text-white' : 'text-gray-700'}`}>
+                              {cat.name}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </AccordionSection>
+
+                    {/* Price Range Section */}
+                    <AccordionSection title="Price Range" icon={<DollarSign className="w-4 h-4" />}>
+                      <div className="space-y-4">
+                        {/* Price Display */}
+                        <div className="flex items-center justify-between">
+                          <div className="px-4 py-2 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-100">
+                            <span className="text-xs text-gray-500">Min</span>
+                            <p className="text-lg font-bold text-gray-800">${priceRange[0]}</p>
+                          </div>
+                          <div className="flex-1 flex items-center justify-center">
+                            <div className="w-8 h-0.5 bg-gradient-to-r from-blue-300 to-purple-300 rounded-full"></div>
+                          </div>
+                          <div className="px-4 py-2 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-100">
+                            <span className="text-xs text-gray-500">Max</span>
+                            <p className="text-lg font-bold text-gray-800">${priceRange[1]}</p>
+                          </div>
+                        </div>
+
+                        {/* Range Sliders */}
+                        <div className="relative pt-2 pb-4">
+                          <div className="relative h-2 bg-gray-100 rounded-full">
+                            {/* Active Range */}
+                            <div 
+                              className="absolute h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
+                              style={{
+                                left: `${(priceRange[0] / 1000) * 100}%`,
+                                right: `${100 - (priceRange[1] / 1000) * 100}%`
+                              }}
+                            ></div>
+                          </div>
+                          
+                          {/* Min Slider */}
+                          <input
+                            type="range"
+                            min="0"
+                            max="1000"
+                            step="10"
+                            value={priceRange[0]}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value)
+                              if (value < priceRange[1]) {
+                                setPriceRange([value, priceRange[1]])
+                              }
+                            }}
+                            className="absolute w-full h-2 top-2 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-blue-500/30 [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-500 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:hover:scale-125 [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:shadow-lg [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-blue-500 [&::-moz-range-thumb]:cursor-pointer"
+                          />
+                          
+                          {/* Max Slider */}
+                          <input
+                            type="range"
+                            min="0"
+                            max="1000"
+                            step="10"
+                            value={priceRange[1]}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value)
+                              if (value > priceRange[0]) {
+                                setPriceRange([priceRange[0], value])
+                              }
+                            }}
+                            className="absolute w-full h-2 top-2 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:shadow-purple-500/30 [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-purple-500 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:hover:scale-125 [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:shadow-lg [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-purple-500 [&::-moz-range-thumb]:cursor-pointer"
+                          />
+                        </div>
+
+                        {/* Quick Price Buttons */}
+                        <div className="flex flex-wrap gap-2">
+                          {[
+                            { label: 'Under $20', range: [0, 20] as [number, number] },
+                            { label: '$20 - $50', range: [20, 50] as [number, number] },
+                            { label: '$50 - $100', range: [50, 100] as [number, number] },
+                            { label: '$100+', range: [100, 1000] as [number, number] },
+                          ].map((preset) => (
+                            <button
+                              key={preset.label}
+                              onClick={() => setPriceRange(preset.range)}
+                              className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all duration-200 ${
+                                priceRange[0] === preset.range[0] && priceRange[1] === preset.range[1]
+                                  ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-md'
+                                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                              }`}
+                            >
+                              {preset.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </AccordionSection>
+
+                    {/* Rating Section */}
+                    <AccordionSection title="Rating" icon={<Star className="w-4 h-4" />}>
+                      <div className="space-y-2">
+                        {[4, 3, 2, 1].map((rating) => (
+                          <button
+                            key={rating}
+                            onClick={() => setMinRating(minRating === rating ? 0 : rating)}
+                            onMouseEnter={() => setHoverRating(rating)}
+                            onMouseLeave={() => setHoverRating(0)}
+                            className={`flex items-center w-full px-4 py-3 rounded-xl transition-all duration-300 group ${
+                              minRating === rating 
+                                ? 'bg-gradient-to-r from-amber-400 to-orange-400 shadow-lg shadow-amber-400/25' 
+                                : hoverRating === rating
+                                  ? 'bg-amber-50'
+                                  : 'hover:bg-gray-50'
+                            }`}
+                          >
+                            <div className="flex gap-1 mr-3">
+                              {[1, 2, 3, 4, 5].map(star => (
+                                <Star 
+                                  key={star} 
+                                  className={`w-5 h-5 transition-all duration-200 ${
+                                    star <= rating 
+                                      ? minRating === rating
+                                        ? 'text-white fill-white'
+                                        : 'text-amber-400 fill-amber-400'
+                                      : minRating === rating
+                                        ? 'text-white/30'
+                                        : 'text-gray-200'
+                                  } ${hoverRating === rating && star <= rating ? 'scale-110' : ''}`} 
+                                />
+                              ))}
+                            </div>
+                            <span className={`text-sm font-medium ${
+                              minRating === rating ? 'text-white' : 'text-gray-600'
+                            }`}>
+                              & Up
+                            </span>
+                            {minRating === rating && (
+                              <div className="ml-auto">
+                                <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>
+                              </div>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </AccordionSection>
+                  </div>
+
+                  {/* Clear All Button */}
+                  <div className="p-5 pt-2 border-t border-gray-100">
+                    <button
+                      onClick={() => {
+                        setSearchTerm('')
+                        setSelectedCategory('')
+                        setPriceRange([0, 1000])
+                        setMinRating(0)
+                        updateUrl('search', '')
+                        updateUrl('categoryId', '')
+                        setSortBy('newest')
+                      }}
+                      className="w-full py-3 text-sm font-semibold text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 group"
+                    >
+                      <X className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
+                      Clear All Filters
+                    </button>
+                  </div>
                 </div>
-              )
-            })}
-          </div>
-        )}
+             </div>
+          </aside>
+          
+          {/* Main Content */}
+          <main className="lg:w-3/4">
+             {/* Controls Bar */}
+             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                <div className="text-gray-600 text-sm">
+                   Showing <span className="font-bold text-gray-900">{paginatedBooks.length}</span> of <span className="font-bold text-gray-900">{filteredBooks.length}</span> results
+                </div>
+                
+                <div className="flex items-center gap-3">
+                   <span className="text-sm font-medium text-gray-600">Sort by:</span>
+                   <div className="relative">
+                      <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                        className="appearance-none bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 pr-8 cursor-pointer font-medium"
+                      >
+                         <option value="newest">Newest Arrivals</option>
+                         <option value="price-asc">Price: Low to High</option>
+                         <option value="price-desc">Price: High to Low</option>
+                         <option value="rating-desc">Highest Rated</option>
+                      </select>
+                      <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                   </div>
+                </div>
+             </div>
+
+             {/* Content Grid */}
+             {booksLoading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                   {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                      <div key={i} className="aspect-[2/3] bg-gray-100 rounded-2xl animate-pulse"></div>
+                   ))}
+                </div>
+             ) : paginatedBooks.length > 0 ? (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-10">
+                    {paginatedBooks.map((book) => (
+                      <BookCard 
+                        key={book.id} 
+                        book={book} 
+                        onAddToCart={handleAddToCart}
+                        isAddingToCart={addToCartMutation.isPending}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <div className="flex justify-center items-center gap-2">
+                       <button
+                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                         disabled={currentPage === 1}
+                         className="p-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                       >
+                         <ChevronLeft className="w-5 h-5" />
+                       </button>
+                       
+                       {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                         <button
+                           key={page}
+                           onClick={() => setCurrentPage(page)}
+                           className={`w-10 h-10 rounded-lg font-medium transition-all ${
+                             currentPage === page
+                               ? 'bg-blue-600 text-white shadow-md'
+                               : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                           }`}
+                         >
+                           {page}
+                         </button>
+                       ))}
+
+                       <button
+                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                         disabled={currentPage === totalPages}
+                         className="p-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                       >
+                         <ChevronRight className="w-5 h-5" />
+                       </button>
+                    </div>
+                  )}
+                </>
+             ) : (
+                <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-dashed border-gray-200">
+                   <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6">
+                      <Search className="w-10 h-10 text-gray-300" />
+                   </div>
+                   <h3 className="text-xl font-bold text-gray-900 mb-2">No books found</h3>
+                   <p className="text-gray-500 max-w-sm text-center mb-6">
+                     We couldn't find any books matching your current filters. Try adjusting your search or categories.
+                   </p>
+                   <button
+                     onClick={() => {
+                        setSearchTerm('')
+                        setSelectedCategory('')
+                        setPriceRange([0, 1000])
+                        setMinRating(0)
+                        setSortBy('newest')
+                     }}
+                     className="px-6 py-2.5 bg-blue-600 text-white rounded-full font-bold hover:bg-blue-700 transition"
+                   >
+                     Clear Filters
+                   </button>
+                </div>
+             )}
+          </main>
+        </div>
       </div>
     </div>
   )

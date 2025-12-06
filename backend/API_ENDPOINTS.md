@@ -20,6 +20,8 @@ Tài liệu mô tả tất cả các endpoints của Backend API.
 10. [Payment Methods (Phương thức thanh toán)](#payment-methods-phương-thức-thanh-toán)
 11. [Payments (Thanh toán)](#payments-thanh-toán)
 12. [Users (Quản lý người dùng)](#users-quản-lý-người-dùng)
+13. [Analytics (Thống kê)](#analytics-thống-kê)
+14. [Upload (Tải lên)](#upload-tải-lên)
 
 ---
 
@@ -50,6 +52,7 @@ Tài liệu mô tả tất cả các endpoints của Backend API.
 | ------ | ---------- | ----------------------- | ----- |
 | POST   | `/register` | Đăng ký tài khoản mới   | ❌    |
 | POST   | `/login`    | Đăng nhập              | ❌    |
+| POST   | `/google`   | Đăng nhập bằng Google OAuth | ❌ |
 | GET    | `/profile`  | Lấy thông tin profile   | ✅ User |
 | PUT    | `/profile`  | Cập nhật thông tin profile | ✅ User |
 
@@ -90,6 +93,28 @@ Tài liệu mô tả tất cả các endpoints của Backend API.
   }
 }
 ```
+
+#### POST `/google` - Đăng nhập bằng Google OAuth
+
+**Request Body:**
+```json
+{
+  "credential": "string (Google ID token, bắt buộc)"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "token": "JWT token",
+    "user": { ... }
+  }
+}
+```
+
+> 💡 **Lưu ý:** Nếu user chưa tồn tại, hệ thống sẽ tự động tạo tài khoản mới dựa trên thông tin từ Google.
 
 #### PUT `/profile` - Cập nhật Profile
 
@@ -458,6 +483,203 @@ Tài liệu mô tả tất cả các endpoints của Backend API.
   "address": "string (tùy chọn)",
   "position": "string (tùy chọn)",
   "role": "USER | ADMIN (tùy chọn)"
+}
+```
+
+---
+
+## Analytics (Thống kê)
+
+**Base Path:** `/api/analytics`
+
+> ⚠️ **Lưu ý:** Tất cả các endpoint trong module này chỉ dành cho Admin.
+
+### Endpoints
+
+| Method | Endpoint           | Mô tả                          | Auth       |
+| ------ | ------------------ | ------------------------------ | ---------- |
+| GET    | `/revenue-by-month` | Lấy doanh thu theo tháng      | ✅ Admin   |
+| GET    | `/orders-by-status` | Lấy số đơn hàng theo trạng thái | ✅ Admin |
+| GET    | `/sales-by-category` | Lấy doanh số theo danh mục    | ✅ Admin   |
+| GET    | `/top-customers`    | Lấy top khách hàng            | ✅ Admin   |
+| GET    | `/dashboard-stats`  | Lấy thống kê tổng quan        | ✅ Admin   |
+
+### Request/Response Details
+
+#### GET `/revenue-by-month` - Doanh thu theo tháng
+
+**Query Parameters:**
+- `months` (optional): Số tháng muốn lấy dữ liệu (mặc định: 6)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    { "month": "2024-07", "revenue": 1500000 },
+    { "month": "2024-08", "revenue": 2300000 }
+  ]
+}
+```
+
+#### GET `/orders-by-status` - Đơn hàng theo trạng thái
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    { "status": "PENDING", "count": 5 },
+    { "status": "PROCESSING", "count": 10 },
+    { "status": "DELIVERED", "count": 45 }
+  ]
+}
+```
+
+#### GET `/sales-by-category` - Doanh số theo danh mục
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    { "name": "Tiểu thuyết", "totalSales": 5000000, "itemCount": 150 },
+    { "name": "Khoa học", "totalSales": 3200000, "itemCount": 80 }
+  ]
+}
+```
+
+#### GET `/top-customers` - Top khách hàng
+
+**Query Parameters:**
+- `limit` (optional): Số lượng khách hàng muốn lấy (mặc định: 5)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "user-id",
+      "fullName": "Nguyễn Văn A",
+      "email": "a@example.com",
+      "totalSpent": 10000000,
+      "orderCount": 25
+    }
+  ]
+}
+```
+
+#### GET `/dashboard-stats` - Thống kê tổng quan Dashboard
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "totalUsers": 150,
+    "totalBooks": 500,
+    "totalOrders": 1200,
+    "totalRevenue": 50000000
+  }
+}
+```
+
+---
+
+## Upload (Tải lên)
+
+**Base Path:** `/api/upload`
+
+> ⚠️ **Lưu ý:** Tất cả các endpoint trong module này yêu cầu xác thực người dùng. Ảnh được lưu trữ trên Cloudinary.
+
+### Endpoints
+
+| Method | Endpoint       | Mô tả                    | Auth       |
+| ------ | -------------- | ------------------------ | ---------- |
+| POST   | `/avatar`      | Upload avatar cho user   | ✅ User    |
+| POST   | `/book/:bookId` | Upload ảnh cho sách     | ✅ Admin   |
+| POST   | `/image`       | Upload ảnh chung         | ✅ Admin   |
+| DELETE | `/image`       | Xóa ảnh trên Cloudinary  | ✅ Admin   |
+
+### Request/Response Details
+
+#### POST `/avatar` - Upload avatar
+
+**Request:**
+- Content-Type: `multipart/form-data`
+- Field: `avatar` (file ảnh)
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Avatar uploaded successfully",
+  "data": {
+    "user": { ... },
+    "image": {
+      "url": "https://res.cloudinary.com/...",
+      "publicId": "bookstore/avatars/..."
+    }
+  }
+}
+```
+
+#### POST `/book/:bookId` - Upload ảnh sách
+
+**Request:**
+- Content-Type: `multipart/form-data`
+- Field: `image` (file ảnh)
+- Params: `bookId` (ID của sách)
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Book image uploaded successfully",
+  "data": {
+    "book": { ... },
+    "image": {
+      "url": "https://res.cloudinary.com/...",
+      "publicId": "bookstore/books/..."
+    }
+  }
+}
+```
+
+#### POST `/image` - Upload ảnh chung
+
+**Request:**
+- Content-Type: `multipart/form-data`
+- Field: `image` (file ảnh)
+- Query: `type` (optional, loại ảnh: "avatar" | "book", mặc định: "book")
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Image uploaded successfully",
+  "data": {
+    "url": "https://res.cloudinary.com/...",
+    "publicId": "bookstore/..."
+  }
+}
+```
+
+#### DELETE `/image` - Xóa ảnh
+
+**Request Body:**
+```json
+{
+  "publicId": "string (Cloudinary public ID, bắt buộc)"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Image deleted successfully"
 }
 ```
 

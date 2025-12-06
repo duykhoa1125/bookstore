@@ -113,7 +113,7 @@ export function AvatarUpload({
       <button
         onClick={() => fileInputRef.current?.click()}
         disabled={loading}
-        className={`absolute bottom-0 right-0 ${buttonSizeClasses[size]} bg-indigo-600 hover:bg-indigo-700 text-white rounded-full flex items-center justify-center shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
+        className={`absolute bottom-0 right-0 ${buttonSizeClasses[size]} bg-gray-900 hover:bg-gray-800 text-white rounded-full flex items-center justify-center shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
         title="Thay đổi ảnh đại diện"
       >
         <Camera className={iconSizeClasses[size]} />

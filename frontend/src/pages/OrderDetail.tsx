@@ -1,7 +1,7 @@
-import { useParams } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
-import { Package, Calendar, MapPin, CreditCard, CheckCircle } from 'lucide-react'
+import { Package, Calendar, MapPin, CreditCard, CheckCircle, Clock, XCircle, Truck, ArrowRight, ShieldCheck } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function OrderDetail() {
@@ -20,8 +20,9 @@ export default function OrderDetail() {
       queryClient.invalidateQueries({ queryKey: ['order', id] })
       toast.success('Payment processed successfully!')
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Payment failed')
+    onError: (error: unknown) => {
+      const err = error as { response?: { data?: { message?: string } } }
+      toast.error(err.response?.data?.message || 'Payment failed')
     },
   })
 
@@ -30,32 +31,43 @@ export default function OrderDetail() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'PENDING':
-        return 'bg-yellow-100 text-yellow-800'
+        return 'bg-yellow-50 text-yellow-700 border border-yellow-200'
       case 'PROCESSING':
-        return 'bg-blue-100 text-blue-800'
+        return 'bg-blue-50 text-blue-700 border border-blue-200'
       case 'SHIPPED':
-        return 'bg-purple-100 text-purple-800'
+        return 'bg-purple-50 text-purple-700 border border-purple-200'
       case 'DELIVERED':
-        return 'bg-green-100 text-green-800'
+        return 'bg-green-50 text-green-700 border border-green-200'
       case 'CANCELLED':
-        return 'bg-red-100 text-red-800'
+        return 'bg-red-50 text-red-700 border border-red-200'
       default:
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-gray-50 text-gray-700 border border-gray-200'
     }
+  }
+
+  const getStatusIcon = (status: string) => {
+     switch (status) {
+       case 'PENDING': return <Clock className="w-4 h-4" />
+       case 'PROCESSING': return <Package className="w-4 h-4" />
+       case 'SHIPPED': return <Truck className="w-4 h-4" />
+       case 'DELIVERED': return <CheckCircle className="w-4 h-4" />
+       case 'CANCELLED': return <XCircle className="w-4 h-4" />
+       default: return <Package className="w-4 h-4" />
+     }
   }
 
   const getPaymentStatusColor = (status: string) => {
     switch (status) {
       case 'PENDING':
-        return 'bg-yellow-100 text-yellow-800'
+        return 'bg-yellow-50 text-yellow-700'
       case 'COMPLETED':
-        return 'bg-green-100 text-green-800'
+        return 'bg-green-50 text-green-700'
       case 'FAILED':
-        return 'bg-red-100 text-red-800'
+        return 'bg-red-50 text-red-700'
       case 'REFUNDED':
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-gray-50 text-gray-700'
       default:
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-gray-50 text-gray-700'
     }
   }
 
@@ -69,7 +81,7 @@ export default function OrderDetail() {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-center items-center py-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
         </div>
       </div>
     )
@@ -78,7 +90,7 @@ export default function OrderDetail() {
   if (!order) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center py-20">
+        <div className="text-center py-20 bg-gray-50 rounded-3xl">
           <p className="text-gray-600 text-lg">Order not found</p>
         </div>
       </div>
@@ -86,70 +98,84 @@ export default function OrderDetail() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
-      <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Order Details</h1>
-          <p className="text-gray-500 mt-1">Order ID: <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">{order.id}</span></p>
-        </div>
-        <div className="flex items-center space-x-2">
-          <span className="text-gray-600">Status:</span>
-          <span
-            className={`px-4 py-1.5 rounded-full text-sm font-bold tracking-wide ${getStatusColor(
-              order.status
-            )}`}
-          >
-            {order.status}
-          </span>
+    <div className="container mx-auto px-4 py-12 max-w-6xl">
+      <div className="mb-10">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+               <div className="p-3 bg-blue-50 rounded-2xl">
+                  <Package className="w-8 h-8 text-blue-600" />
+               </div>
+               <h1 className="text-4xl font-bold text-gray-900 tracking-tight">Order Details</h1>
+            </div>
+            <p className="text-gray-500 ml-1">Order ID: <span className="font-mono font-bold text-gray-700 ml-1">#{order.id.slice(0, 8).toUpperCase()}</span></p>
+          </div>
+          
+          <div className="flex items-center gap-3 bg-white p-2 pr-4 rounded-full shadow-sm border border-gray-100">
+            <span className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold shadow-sm ${getStatusColor(order.status)}`}>
+               {getStatusIcon(order.status)}
+               {order.status}
+            </span>
+            <span className="text-sm text-gray-400 font-medium">
+               {new Date(order.orderDate).toLocaleDateString()}
+            </span>
+          </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column: Order Items */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-              <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                <Package className="w-5 h-5 mr-2 text-blue-600" />
-                Items ({order.items.length})
+          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="px-8 py-6 border-b border-gray-100 bg-gray-50/50">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                Items Purchased
+                <span className="ml-3 px-3 py-1 bg-gray-200/50 text-gray-600 rounded-full text-xs">
+                   {order.items.length}
+                </span>
               </h2>
             </div>
             <div className="divide-y divide-gray-100">
               {order.items.map((item) => (
-                <div key={item.id} className="p-6 flex gap-6 hover:bg-gray-50 transition-colors">
-                  <div className="flex-shrink-0">
+                <Link to={`/books/${item.book.id}`} key={item.id} className="p-8 flex gap-6 hover:bg-gray-50 transition-colors group">
+                  <div className="flex-shrink-0 relative overflow-hidden rounded-xl border border-gray-100 shadow-sm w-24 h-32">
                     {item.book.imageUrl ? (
                       <img
                         src={item.book.imageUrl}
                         alt={item.book.title}
-                        className="w-24 h-32 object-cover rounded-md shadow-sm"
+                        className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
                       />
                     ) : (
-                      <div className="w-24 h-32 bg-gray-200 rounded-md flex items-center justify-center">
-                        <Package className="w-8 h-8 text-gray-400" />
+                      <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                        <Package className="w-8 h-8 text-gray-300" />
                       </div>
                     )}
                   </div>
-                  <div className="flex-grow">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-1">{item.book.title}</h3>
-                    <p className="text-sm text-gray-500 mb-4">
-                      {item.book.category?.name} • {item.book.publisher?.name}
-                    </p>
-                    <div className="flex justify-between items-end">
-                      <div className="text-sm text-gray-600">
-                        <span className="font-medium">Quantity:</span> {item.quantity} × ${item.price.toFixed(2)}
+                  <div className="flex-grow flex flex-col justify-between py-1">
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900 mb-1 leading-tight group-hover:text-blue-600 transition-colors">{item.book.title}</h3>
+                      <p className="text-sm text-gray-500">
+                         by {item.book.authors?.map(a => a.author.name).join(', ') || 'Unknown Author'}
+                      </p>
+                    </div>
+                    
+                    <div className="flex justify-between items-end mt-4">
+                      <div className="flex items-center gap-3 text-sm text-gray-600 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+                        <span>x{item.quantity}</span>
+                        <span className="w-px h-3 bg-gray-300"></span>
+                        <span>${item.price.toFixed(2)}</span>
                       </div>
-                      <div className="text-lg font-bold text-gray-900">
+                      <div className="text-xl font-bold text-gray-900">
                         ${(item.price * item.quantity).toFixed(2)}
                       </div>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
-            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
-              <span className="font-medium text-gray-600">Subtotal</span>
-              <span className="text-xl font-bold text-gray-900">${order.total.toFixed(2)}</span>
+            <div className="px-8 py-6 bg-gray-50/50 border-t border-gray-100 flex justify-between items-center">
+              <span className="font-semibold text-gray-500">Subtotal</span>
+              <span className="text-2xl font-bold text-gray-900 tracking-tight">${order.total.toFixed(2)}</span>
             </div>
           </div>
         </div>
@@ -157,109 +183,105 @@ export default function OrderDetail() {
         {/* Right Column: Info & Payment */}
         <div className="lg:col-span-1 space-y-6">
           {/* Payment Information */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-              <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                <CreditCard className="w-5 h-5 mr-2 text-blue-600" />
-                Payment Info
+          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden relative">
+            <div className="absolute top-0 right-0 p-3 opacity-10">
+               <CreditCard className="w-24 h-24 transform rotate-12" />
+            </div>
+            
+            <div className="px-8 py-6 border-b border-gray-100">
+              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                Payment Details
               </h2>
             </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <p className="text-sm text-gray-500 mb-1">Payment Method</p>
-                <p className="font-medium text-gray-900 flex items-center">
-                  {order.payment?.paymentMethod?.name || 'N/A'}
-                </p>
+            
+            <div className="p-8 space-y-6">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-500 font-medium">Method</span>
+                <span className="font-bold text-gray-900 flex items-center gap-2">
+                   {order.payment?.paymentMethod?.name || 'N/A'}
+                </span>
               </div>
               
-              <div>
-                <p className="text-sm text-gray-500 mb-1">Payment Status</p>
-                <div className="flex items-center justify-between">
-                  <span className={`px-3 py-1 rounded-full text-xs font-bold ${getPaymentStatusColor(order.payment?.status || 'PENDING')}`}>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-500 font-medium">Status</span>
+                <div className="flex items-center gap-2">
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 ${getPaymentStatusColor(order.payment?.status || 'PENDING')}`}>
+                    {order.payment?.status === 'COMPLETED' ? <CheckCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
                     {order.payment?.status || 'PENDING'}
                   </span>
-                  {order.payment?.status === 'COMPLETED' && (
-                    <CheckCircle className="w-5 h-5 text-green-500" />
-                  )}
                 </div>
               </div>
 
               {order.payment?.status === 'PENDING' && order.status !== 'CANCELLED' && (
-                <div className="pt-4 border-t border-gray-100">
+                <div className="pt-6 mt-2 border-t border-gray-100">
                   <button
                     onClick={handlePayment}
                     disabled={processPaymentMutation.isPending}
-                    className="w-full bg-green-600 text-white px-4 py-3 rounded-lg font-bold hover:bg-green-700 transition shadow-md hover:shadow-lg transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                    className="w-full group relative overflow-hidden bg-gray-900 text-white px-6 py-4 rounded-2xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:-translate-y-0.5"
                   >
-                    {processPaymentMutation.isPending ? (
-                      <span className="flex items-center">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Processing...
-                      </span>
-                    ) : (
-                      <>
-                        Pay Now (${order.total.toFixed(2)})
-                      </>
-                    )}
+                     <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                     <span className="relative z-10 flex items-center justify-center gap-2">
+                        {processPaymentMutation.isPending ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            Processing...
+                          </>
+                        ) : (
+                          <>
+                            Pay Now
+                            <span className="bg-white/20 px-2 py-0.5 rounded text-sm">${order.total.toFixed(2)}</span>
+                            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                          </>
+                        )}
+                     </span>
                   </button>
-                  <p className="text-xs text-gray-500 mt-2 text-center">
-                    Secure payment processing
-                  </p>
+                  <div className="flex items-center justify-center gap-2 mt-3 text-xs text-gray-400 font-medium">
+                     <ShieldCheck className="w-3 h-3" />
+                     Secure encrypted payment
+                  </div>
                 </div>
               )}
             </div>
           </div>
 
           {/* Shipping Information */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-              <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                <MapPin className="w-5 h-5 mr-2 text-blue-600" />
+          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="px-8 py-6 border-b border-gray-100">
+              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                 Shipping Details
               </h2>
             </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <p className="text-sm text-gray-500 mb-1">Address</p>
-                <p className="text-gray-900">{order.shippingAddress}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500 mb-1">Order Date</p>
-                <p className="text-gray-900 flex items-center">
-                  <Calendar className="w-4 h-4 mr-2 text-gray-400" />
-                  {new Date(order.orderDate).toLocaleString()}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Order Confirmation Info (if confirmed) */}
-          {order.confirmedBy && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-               <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-                <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                  <CheckCircle className="w-5 h-5 mr-2 text-blue-600" />
-                  Confirmation
-                </h2>
-              </div>
-              <div className="p-6">
-                <div className="flex items-start space-x-3">
-                  <div className="flex-shrink-0">
-                    <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
-                      {order.confirmedBy.fullName.charAt(0)}
-                    </div>
+            <div className="p-8">
+               <div className="flex items-start gap-4 mb-6">
+                  <div className="p-2.5 bg-gray-50 rounded-xl">
+                      <MapPin className="w-5 h-5 text-gray-400" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-900">Confirmed by {order.confirmedBy.fullName}</p>
-                    <p className="text-xs text-gray-500">{order.confirmedBy.email}</p>
-                    {order.confirmedBy.position && (
-                      <p className="text-xs text-blue-600 mt-1">{order.confirmedBy.position}</p>
-                    )}
+                     <p className="text-sm text-gray-500 font-medium mb-1">Delivery Address</p>
+                     <p className="text-gray-900 font-medium leading-relaxed">{order.shippingAddress}</p>
                   </div>
-                </div>
-              </div>
+               </div>
+               
+               <div className="flex items-start gap-4">
+                  <div className="p-2.5 bg-gray-50 rounded-xl">
+                      <Calendar className="w-5 h-5 text-gray-400" />
+                  </div>
+                  <div>
+                     <p className="text-sm text-gray-500 font-medium mb-1">Order Date</p>
+                     <p className="text-gray-900 font-medium">
+                        {new Date(order.orderDate).toLocaleDateString(undefined, { 
+                           weekday: 'long', 
+                           year: 'numeric', 
+                           month: 'long', 
+                           day: 'numeric',
+                           hour: '2-digit',
+                           minute: '2-digit'
+                        })}
+                     </p>
+                  </div>
+               </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
-import { Trash2, Plus, Minus, ShoppingBag } from 'lucide-react'
+import { Trash2, Plus, Minus, ShoppingBag, CreditCard, MapPin, Truck, ArrowRight, ShieldCheck } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useState, useEffect } from 'react'
@@ -172,64 +172,81 @@ export default function Cart() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-4xl font-bold mb-8">Shopping Cart</h1>
+    <div className="container mx-auto px-4 py-12">
+      <div className="flex items-center gap-4 mb-10">
+         <div className="p-3 bg-blue-50 rounded-2xl">
+            <ShoppingBag className="w-8 h-8 text-blue-600" />
+         </div>
+         <h1 className="text-4xl md:text-5xl font-bold text-gray-900 tracking-tight">Your Cart</h1>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Cart Items */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-2 space-y-6">
           {cart.items.map((item) => (
-            <div key={item.id} className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex gap-4">
-                {item.book.imageUrl ? (
-                  <img
-                    src={item.book.imageUrl}
-                    alt={item.book.title}
-                    className="w-24 h-24 object-cover rounded"
-                  />
-                ) : (
-                  <div className="w-24 h-24 bg-gray-200 rounded flex items-center justify-center">
-                    <ShoppingBag className="w-8 h-8 text-gray-400" />
+            <div key={item.id} className="group bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300 relative overflow-hidden">
+              <div className="flex gap-6 items-start">
+                <div className="relative w-32 aspect-[2/3] rounded-xl overflow-hidden shadow-md flex-shrink-0">
+                  {item.book.imageUrl ? (
+                    <img
+                      src={item.book.imageUrl}
+                      alt={item.book.title}
+                      className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                      <ShoppingBag className="w-8 h-8 text-gray-300" />
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex-grow flex flex-col justify-between min-h-[140px]">
+                  <div>
+                     <div className="flex justify-between items-start">
+                        <Link
+                          to={`/books/${item.book.id}`}
+                          className="text-xl font-bold text-gray-900 hover:text-blue-600 transition-colors line-clamp-2"
+                        >
+                          {item.book.title}
+                        </Link>
+                        <button
+                          onClick={() => handleRemoveItem(item.id)}
+                          disabled={removeItemMutation.isPending}
+                          className="text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                     </div>
+                     <p className="text-gray-500 mt-1 font-medium">
+                       ${item.book.price.toFixed(2)}
+                     </p>
                   </div>
-                )}
-                <div className="flex-grow">
-                  <Link
-                    to={`/books/${item.book.id}`}
-                    className="text-lg font-semibold hover:text-blue-600 transition"
-                  >
-                    {item.book.title}
-                  </Link>
-                  <p className="text-gray-600 text-sm mt-1">
-                    ${item.book.price.toFixed(2)} each
-                  </p>
-                  <div className="flex items-center space-x-4 mt-4">
-                    <div className="flex items-center space-x-2 border border-gray-300 rounded">
+
+                  <div className="flex items-center justify-between mt-4">
+                    <div className="flex items-center gap-3 bg-gray-50 rounded-full p-1 border border-gray-200">
                       <button
                         onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
                         disabled={item.quantity <= 1}
-                        className="p-1 hover:bg-gray-100 disabled:opacity-50"
+                        className="w-8 h-8 flex items-center justify-center rounded-full bg-white shadow-sm text-gray-600 hover:text-blue-600 disabled:opacity-50 disabled:hover:text-gray-600 transition-all"
                       >
                         <Minus className="w-4 h-4" />
                       </button>
-                      <span className="px-3 py-1">{item.quantity}</span>
+                      <span className="w-8 text-center font-bold text-gray-900">{item.quantity}</span>
                       <button
                         onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
                         disabled={item.quantity >= item.book.stock}
-                        className="p-1 hover:bg-gray-100 disabled:opacity-50"
+                        className="w-8 h-8 flex items-center justify-center rounded-full bg-white shadow-sm text-gray-600 hover:text-blue-600 disabled:opacity-50 disabled:hover:text-gray-600 transition-all"
                       >
                         <Plus className="w-4 h-4" />
                       </button>
                     </div>
-                    <span className="text-lg font-semibold">
-                      ${(item.book.price * item.quantity).toFixed(2)}
-                    </span>
-                    <button
-                      onClick={() => handleRemoveItem(item.id)}
-                      disabled={removeItemMutation.isPending}
-                      className="ml-auto text-red-600 hover:text-red-700 p-2"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
+                    
+                    <div className="text-right">
+                       <p className="text-sm text-gray-500">Total</p>
+                       <p className="text-xl font-bold text-blue-600">
+                         ${(item.book.price * item.quantity).toFixed(2)}
+                       </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -239,8 +256,8 @@ export default function Cart() {
 
         {/* Order Summary */}
         <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg shadow-md p-6 sticky top-24">
-            <h2 className="text-2xl font-bold mb-4">Order Summary</h2>
+          <div className="bg-white rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 sticky top-24">
+            <h2 className="text-2xl font-bold mb-6 text-gray-900">Order Summary</h2>
             <div className="space-y-2 mb-4">
               <div className="flex justify-between">
                 <span>Subtotal:</span>
@@ -252,39 +269,51 @@ export default function Cart() {
               </div>
             </div>
 
-            <form onSubmit={handleCheckout} className="space-y-6">
-              <div>
-                <label htmlFor="shippingAddress" className="block text-sm font-medium text-gray-700 mb-2">
-                  Shipping Address
-                </label>
-                <textarea
-                  id="shippingAddress"
-                  value={shippingAddress}
-                  onChange={(e) => setShippingAddress(e.target.value)}
-                  required
-                  minLength={10}
-                  rows={3}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white transition-shadow"
-                  placeholder="Enter your shipping address (minimum 10 characters)"
-                />
-                {shippingAddress.length > 0 && shippingAddress.length < 10 && (
-                  <p className="text-xs text-red-600 mt-1">
-                    Address must be at least 10 characters ({shippingAddress.length}/10)
-                  </p>
-                )}
+            <form onSubmit={handleCheckout} className="space-y-8">
+              {/* Shipping Address */}
+              <div className="space-y-4">
+                 <div className="flex items-center gap-2 text-gray-900 font-semibold mb-2">
+                    <MapPin className="w-5 h-5 text-blue-600" />
+                    <h3>Shipping Information</h3>
+                 </div>
+                 <div className="relative group">
+                    <div className="absolute top-3.5 left-3.5 text-gray-400 group-focus-within:text-blue-600 transition-colors">
+                       <Truck className="w-5 h-5" />
+                    </div>
+                    <textarea
+                      id="shippingAddress"
+                      value={shippingAddress}
+                      onChange={(e) => setShippingAddress(e.target.value)}
+                      required
+                      minLength={10}
+                      rows={3}
+                      className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white transition-all resize-none text-sm leading-relaxed placeholder:text-gray-400 outline-none"
+                      placeholder="Enter your full delivery address..."
+                    />
+                 </div>
+                 {shippingAddress.length > 0 && shippingAddress.length < 10 && (
+                   <p className="text-xs text-red-500 pl-1 font-medium flex items-center gap-1">
+                     Address is too short ({shippingAddress.length}/10)
+                   </p>
+                 )}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">Payment Method</label>
+              {/* Payment Methods */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-gray-900 font-semibold">
+                   <CreditCard className="w-5 h-5 text-blue-600" />
+                   <h3>Payment Method</h3>
+                </div>
+                
                 {paymentMethods.length > 0 ? (
-                  <div className="space-y-3">
+                  <div className="grid grid-cols-1 gap-3">
                     {paymentMethods.map((method) => (
                       <label
                         key={method.id}
-                        className={`flex items-center p-4 border rounded-lg cursor-pointer transition-all ${
+                        className={`group relative flex items-center p-4 border rounded-2xl cursor-pointer transition-all duration-300 ${
                           selectedPaymentMethod === method.id
-                            ? 'border-blue-600 bg-blue-50 ring-1 ring-blue-600'
-                            : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+                            ? 'border-blue-600 bg-blue-50/50 shadow-sm ring-1 ring-blue-600/20'
+                            : 'border-gray-200 hover:border-blue-300 hover:bg-white hover:shadow-md'
                         }`}
                       >
                         <input
@@ -293,29 +322,62 @@ export default function Cart() {
                           value={method.id}
                           checked={selectedPaymentMethod === method.id}
                           onChange={(e) => setSelectedPaymentMethod(e.target.value)}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                          className="sr-only"
                         />
-                        <span className="ml-3 block text-sm font-medium text-gray-900">
+                        
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors mr-3.5 ${
+                           selectedPaymentMethod === method.id 
+                           ? 'border-blue-600' 
+                           : 'border-gray-300 group-hover:border-blue-400'
+                        }`}>
+                           {selectedPaymentMethod === method.id && (
+                             <div className="w-2.5 h-2.5 rounded-full bg-blue-600" />
+                           )}
+                        </div>
+                        
+                        <span className={`font-semibold text-sm ${selectedPaymentMethod === method.id ? 'text-blue-900' : 'text-gray-700'}`}>
                           {method.name}
                         </span>
+                        
+                        {/* Right Icon */}
+                        <div className="ml-auto opacity-50 group-hover:opacity-100 transition-opacity">
+                           {method.name.toLowerCase().includes('cash') || method.name.toLowerCase().includes('cod') ? (
+                              <ShieldCheck className="w-5 h-5 text-green-600" />
+                           ) : (
+                              <CreditCard className="w-5 h-5 text-blue-600" />
+                           )}
+                        </div>
                       </label>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-red-500">No payment methods available.</p>
+                  <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm text-center">
+                    No payment methods available.
+                  </div>
                 )}
               </div>
 
               <button
                 type="submit"
                 disabled={createOrderMutation.isPending || pendingUpdates > 0 || !shippingAddress.trim() || !selectedPaymentMethod}
-                className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                className="w-full group relative overflow-hidden bg-gray-900 text-white px-6 py-4 rounded-2xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_10px_20px_-5px_rgba(0,0,0,0.3)] hover:shadow-[0_20px_30px_-5px_rgba(0,0,0,0.4)] hover:scale-[1.02] active:scale-[0.98]"
               >
-                {pendingUpdates > 0
-                  ? 'Applying updates...'
-                  : createOrderMutation.isPending
-                  ? 'Processing Order...'
-                  : 'Place Order'}
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  {pendingUpdates > 0 ? (
+                    'Updating Cart...'
+                  ) : createOrderMutation.isPending ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      Place Order
+                      <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    </>
+                  )}
+                </span>
               </button>
             </form>
           </div>
