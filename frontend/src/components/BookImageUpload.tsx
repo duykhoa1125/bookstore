@@ -124,18 +124,18 @@ export function BookImageUpload({
 
   return (
     <div
-      className={`relative border-2 border-dashed rounded-xl transition-all duration-200 ${
+      className={`relative border-2 border-dashed rounded-2xl transition-all duration-200 group ${
         dragActive
-          ? "border-indigo-500 bg-indigo-50 scale-[1.02]"
-          : "border-gray-300 hover:border-gray-400 bg-gray-50"
+          ? "border-blue-500 bg-blue-50/50 scale-[1.01] shadow-lg shadow-blue-500/10"
+          : "border-gray-200 hover:border-blue-400 bg-gray-50/50 hover:bg-white"
       } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
       onDragOver={!disabled ? handleDragOver : undefined}
       onDragLeave={!disabled ? handleDragLeave : undefined}
       onDrop={!disabled ? handleDrop : undefined}
     >
       {displayImage ? (
-        <div className="relative p-4">
-          <div className="relative aspect-[2/3] max-w-[200px] mx-auto overflow-hidden rounded-lg shadow-md">
+        <div className="relative p-6">
+          <div className="relative aspect-[2/3] max-w-[180px] mx-auto overflow-hidden rounded-xl shadow-lg ring-1 ring-gray-900/5 group-hover:scale-[1.02] transition-transform duration-300">
             <img
               src={displayImage}
               alt="Book cover preview"
@@ -146,8 +146,8 @@ export function BookImageUpload({
             {!disabled && !loading && (
               <button
                 onClick={handleClearImage}
-                className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg"
-                title="Xóa ảnh"
+                className="absolute top-2 right-2 p-2 bg-white/90 backdrop-blur-sm text-red-500 rounded-full hover:bg-red-500 hover:text-white transition-all shadow-sm ring-1 ring-black/5 opacity-0 group-hover:opacity-100 transform translate-y-1 group-hover:translate-y-0"
+                title="Remove image"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -155,11 +155,13 @@ export function BookImageUpload({
 
             {/* Loading overlay */}
             {loading && (
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg">
+              <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center">
                 <div className="text-center">
-                  <Loader2 className="w-8 h-8 text-white animate-spin mx-auto" />
-                  <span className="text-white text-sm mt-2 block">
-                    Đang tải...
+                  <div className="bg-white p-3 rounded-xl shadow-lg ring-1 ring-gray-100">
+                    <Loader2 className="w-6 h-6 text-blue-600 animate-spin mx-auto" />
+                  </div>
+                  <span className="text-gray-900 text-xs font-bold mt-2 block tracking-wide uppercase">
+                    Uploading...
                   </span>
                 </div>
               </div>
@@ -168,42 +170,46 @@ export function BookImageUpload({
 
           {/* Replace button */}
           {!disabled && !loading && (
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="mt-3 mx-auto flex items-center gap-2 px-4 py-2 text-sm text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors"
-            >
-              <Upload className="w-4 h-4" />
-              Thay đổi ảnh
-            </button>
+            <div className="mt-4 flex justify-center">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wide text-gray-600 hover:text-blue-600 bg-white border border-gray-200 hover:border-blue-200 rounded-lg transition-all shadow-sm hover:shadow-md"
+              >
+                <Upload className="w-4 h-4" />
+                <span>Change Image</span>
+              </button>
+            </div>
           )}
         </div>
       ) : (
         <div
           onClick={!disabled ? () => fileInputRef.current?.click() : undefined}
-          className={`p-8 text-center ${!disabled ? "cursor-pointer" : ""}`}
+          className={`p-10 text-center ${!disabled ? "cursor-pointer" : ""}`}
         >
           {loading ? (
             <div className="py-4">
-              <Loader2 className="w-12 h-12 mx-auto text-indigo-500 animate-spin" />
-              <p className="mt-3 text-sm text-gray-600">Đang tải ảnh lên...</p>
+              <div className="bg-white p-4 rounded-full shadow-lg inline-block mb-3 ring-1 ring-gray-100">
+                <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+              </div>
+              <p className="text-sm font-semibold text-gray-900">Uploading image...</p>
             </div>
           ) : (
-            <>
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-                <ImageIcon className="w-8 h-8 text-gray-400" />
+            <div className="group-hover:translate-y-[-2px] transition-transform duration-300">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white border border-gray-100 shadow-sm flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+                <ImageIcon className="w-8 h-8 text-gray-400 group-hover:text-blue-500 transition-colors" />
               </div>
-              <p className="text-sm font-medium text-gray-700 mb-1">
-                Kéo thả ảnh vào đây
+              <p className="text-sm font-bold text-gray-900 mb-1">
+                Drag & drop cover image
               </p>
-              <p className="text-sm text-gray-500 mb-3">hoặc</p>
-              <span className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors">
+              <p className="text-xs text-gray-500 mb-4 font-medium">or click to browse</p>
+              <span className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-900 text-white text-xs font-bold uppercase tracking-wide rounded-xl hover:bg-black transition-all shadow-lg shadow-gray-900/10 group-hover:shadow-xl hover:-translate-y-0.5">
                 <Upload className="w-4 h-4" />
-                Chọn ảnh
+                Select File
               </span>
-              <p className="mt-4 text-xs text-gray-400">
-                PNG, JPG, WebP, GIF (tối đa 10MB)
+              <p className="mt-6 text-[10px] uppercase tracking-wider font-bold text-gray-400 group-hover:text-gray-500 transition-colors">
+                PNG, JPG, WebP, GIF (Max 10MB)
               </p>
-            </>
+            </div>
           )}
         </div>
       )}

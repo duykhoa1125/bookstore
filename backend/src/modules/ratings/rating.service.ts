@@ -28,7 +28,7 @@ export class RatingService {
         content: data.content,
       },
       include: {
-        user: { select: { fullName: true } },
+        user: { select: { fullName: true, avatar: true } },
         book: { select: { title: true } },
       },
     });
@@ -38,7 +38,7 @@ export class RatingService {
   async findByBook(bookId: string) {
     const ratings = await prisma.rating.findMany({
       where: { bookId },
-      include: { user: { select: { fullName: true } } },
+      include: { user: { select: { fullName: true, avatar: true } } },
       orderBy: { createdAt: "desc" },
     });
 
@@ -61,7 +61,7 @@ export class RatingService {
       where: { id: ratingId },
       data,
       include: {
-        user: { select: { fullName: true } },
+        user: { select: { fullName: true, avatar: true } },
         book: { select: { title: true } },
       },
     });
@@ -113,7 +113,7 @@ export class RatingService {
     const rating = await prisma.rating.findUnique({
       where: { userId_bookId: { userId, bookId } },
       include: {
-        user: { select: { fullName: true } },
+        user: { select: { fullName: true, avatar: true } },
         book: { select: { title: true } },
       },
     });
@@ -125,7 +125,7 @@ export class RatingService {
   async findAll() {
     const ratings = await prisma.rating.findMany({
       include: {
-        user: { select: { fullName: true, email: true } },
+        user: { select: { fullName: true, email: true, avatar: true } },
         book: { select: { title: true } },
       },
       orderBy: { createdAt: "desc" },

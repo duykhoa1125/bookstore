@@ -57,18 +57,17 @@ export default function Breadcrumb() {
   }
 
   return (
-    <nav className="bg-white border-b border-gray-200 shadow-sm">
-      <div className="container mx-auto px-4 py-3.5">
+    <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-30">
+      <div className="container mx-auto px-4 py-3">
         <ol className="flex items-center space-x-2 text-sm">
           {/* Home link */}
           <li>
             <Link
               to="/"
-              className="flex items-center text-gray-500 hover:text-blue-600 transition-colors group"
+              className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-500 hover:bg-blue-50 hover:text-blue-600 transition-all group shadow-sm hover:shadow-md"
               title="Home"
             >
               <Home className="w-4 h-4 group-hover:scale-110 transition-transform" />
-              <span className="ml-1.5 hidden sm:inline">Home</span>
             </Link>
           </li>
 
@@ -80,13 +79,13 @@ export default function Breadcrumb() {
               <li key={item.path} className="flex items-center space-x-2">
                 <ChevronRight className="w-4 h-4 text-gray-300" />
                 {isLast ? (
-                  <span className="font-semibold text-gray-900 px-2 py-1 bg-gray-50 rounded">
+                  <span className="font-bold text-gray-900 px-3 py-1.5 bg-gray-100 rounded-full text-xs uppercase tracking-wide">
                     {item.label}
                   </span>
                 ) : (
                   <Link
                     to={item.path}
-                    className="text-gray-600 hover:text-blue-600 transition-colors px-2 py-1 hover:bg-blue-50 rounded"
+                    className="text-gray-500 hover:text-blue-600 transition-colors font-medium px-2 py-1 hover:bg-gray-50 rounded-lg"
                   >
                     {item.label}
                   </Link>

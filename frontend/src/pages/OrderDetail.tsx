@@ -1,4 +1,4 @@
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { Package, Calendar, MapPin, CreditCard, CheckCircle, Clock, XCircle, Truck, ArrowRight, ShieldCheck } from 'lucide-react'
@@ -6,6 +6,7 @@ import toast from 'react-hot-toast'
 
 export default function OrderDetail() {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
 
   const { data: orderData, isLoading } = useQuery({
@@ -19,6 +20,7 @@ export default function OrderDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['order', id] })
       toast.success('Payment processed successfully!')
+      navigate(`/payment-success/${id}`)
     },
     onError: (error: unknown) => {
       const err = error as { response?: { data?: { message?: string } } }

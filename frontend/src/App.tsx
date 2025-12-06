@@ -24,6 +24,8 @@ import AdminAuthors from './pages/admin/AdminAuthors'
 import AdminPublishers from './pages/admin/AdminPublishers'
 import AdminPaymentMethods from './pages/admin/AdminPaymentMethods'
 import AdminUsers from './pages/admin/AdminUsers'
+import NotFound from './pages/NotFound'
+import PaymentSuccess from './pages/PaymentSuccess'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading } = useAuth()
@@ -118,6 +120,15 @@ function App() {
             }
           />
           <Route path="about" element={<About />} />
+          <Route
+            path="payment-success/:orderId"
+            element={
+              <ProtectedRoute>
+                <PaymentSuccess />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="*" element={<NotFound />} />
         </Route>
 
         {/* Admin Routes with AdminLayout */}

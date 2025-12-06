@@ -128,160 +128,176 @@ export default function EditBook() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="max-w-[1000px] mx-auto p-8">
       <Link
         to="/admin/books"
-        className="inline-flex items-center text-blue-600 hover:text-blue-700 mb-6"
+        className="inline-flex items-center text-gray-500 hover:text-gray-900 transition-colors mb-8 group font-medium"
       >
-        <ArrowLeft className="w-4 h-4 mr-2" />
+         <div className="bg-white p-2 rounded-lg shadow-sm group-hover:shadow-md mr-3 transition-all border border-gray-100">
+           <ArrowLeft className="w-4 h-4" />
+        </div>
         Back to Books
       </Link>
 
-      <h1 className="text-4xl font-bold mb-8">Edit Book</h1>
+      <div className="mb-10">
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900">Edit Book</h1>
+        <p className="text-gray-500 mt-1 font-medium">Update the details of your book.</p>
+      </div>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-6 max-w-2xl">
-        <div className="space-y-6">
+      <form onSubmit={handleSubmit} className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-xl shadow-gray-200/50 border border-white/60 p-8 md:p-10">
+        <div className="space-y-8">
           <div>
-            <label className="block text-sm font-medium mb-2">Title *</label>
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Title *</label>
             <input
               type="text"
               required
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none shadow-sm"
+              placeholder="Enter book title"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium mb-2">Price *</label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                required
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Price *</label>
+              <div className="relative">
+                <span className="absolute left-4 top-3 text-gray-400 font-medium">$</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  required
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                  className="w-full bg-white border border-gray-200 rounded-xl pl-8 pr-4 py-3 text-sm font-medium text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none shadow-sm"
+                  placeholder="0.00"
+                />
+              </div>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Stock *</label>
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Stock *</label>
               <input
                 type="number"
                 min="0"
                 required
                 value={formData.stock}
                 onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none shadow-sm"
+                placeholder="0"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Description</label>
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Description</label>
             <textarea
               rows={4}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none shadow-sm resize-y"
+              placeholder="Enter book description..."
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-2">Book Cover Image</label>
+          <div className="bg-gray-50/50 p-6 rounded-2xl border border-gray-100/50">
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Book Cover Image</label>
             <BookImageUpload
               bookId={id}
               currentImage={formData.imageUrl}
               onUploadSuccess={(url) => setFormData({ ...formData, imageUrl: url })}
               onUrlChange={(url) => setFormData({ ...formData, imageUrl: url })}
             />
-            <p className="text-xs text-gray-500 mt-2">
-              Drag & drop an image or click to upload. You can also paste an image URL below.
+            <p className="text-xs text-gray-500 mt-2 font-medium">
+              Drag & drop an image or click to upload.
             </p>
-            <input
-              type="url"
-              placeholder="Or enter image URL directly..."
-              value={formData.imageUrl}
-              onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-              className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-            />
+            <div className="mt-3">
+               <input
+                type="url"
+                placeholder="Or paste image URL here..."
+                value={formData.imageUrl}
+                onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-medium text-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none shadow-sm"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Publisher *</label>
+              <select
+                required
+                value={formData.publisherId}
+                onChange={(e) => setFormData({ ...formData, publisherId: e.target.value })}
+                className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none shadow-sm appearance-none"
+              >
+                <option value="">Select Publisher</option>
+                {publishers.map((publisher) => (
+                  <option key={publisher.id} value={publisher.id}>
+                    {publisher.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Category *</label>
+              <select
+                required
+                value={formData.categoryId}
+                onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
+                className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none shadow-sm appearance-none"
+              >
+                <option value="">Select Category</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Publisher *</label>
-            <select
-              required
-              value={formData.publisherId}
-              onChange={(e) => setFormData({ ...formData, publisherId: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Select Publisher</option>
-              {publishers.map((publisher) => (
-                <option key={publisher.id} value={publisher.id}>
-                  {publisher.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">Category *</label>
-            <select
-              required
-              value={formData.categoryId}
-              onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Select Category</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">Authors * (Select at least one)</label>
-            <div className="border border-gray-300 rounded-lg p-4 max-h-48 overflow-y-auto">
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Authors * <span className="text-gray-400 font-normal lowercase">(Select at least one)</span></label>
+            <div className="bg-white border border-gray-200 rounded-xl p-4 max-h-48 overflow-y-auto shadow-sm custom-scrollbar">
               {authors.length === 0 ? (
-                <p className="text-gray-500 text-sm">No authors available</p>
+                <p className="text-gray-500 text-sm italic">No authors available</p>
               ) : (
-                <div className="space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {authors.map((author) => (
-                    <label key={author.id} className="flex items-center space-x-2 cursor-pointer">
+                    <label key={author.id} className="flex items-center space-x-3 cursor-pointer p-2 hover:bg-gray-50 rounded-lg transition-colors">
                       <input
                         type="checkbox"
                         checked={formData.authorIds.includes(author.id)}
                         onChange={() => toggleAuthor(author.id)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
                       />
-                      <span className="text-sm">{author.name}</span>
+                      <span className="text-sm font-medium text-gray-700">{author.name}</span>
                     </label>
                   ))}
                 </div>
               )}
             </div>
             {formData.authorIds.length > 0 && (
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-xs text-blue-600 mt-2 font-semibold">
                 {formData.authorIds.length} author(s) selected
               </p>
             )}
           </div>
 
-          <div className="flex space-x-4">
+          <div className="flex gap-4 pt-4 border-t border-gray-100">
             <button
               type="button"
               onClick={() => navigate('/admin/books')}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="flex-1 px-6 py-3.5 text-sm font-bold rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-700 transition-all duration-200"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={updateMutation.isPending}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              className="flex-1 px-6 py-3.5 text-sm font-bold rounded-xl bg-gray-900 text-white hover:bg-black transition-all duration-200 shadow-lg shadow-gray-900/20 hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-70 disabled:hover:translate-y-0"
             >
               {updateMutation.isPending ? 'Updating...' : 'Update Book'}
             </button>

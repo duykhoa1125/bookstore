@@ -7,7 +7,6 @@ import {
   ShoppingCart,
   Star,
   User as UserIcon,
-  Calendar,
   Minus,
   Plus,
   Check,

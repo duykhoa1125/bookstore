@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
-import { Package, Eye, Loader2 } from 'lucide-react'
+import { Package, Loader2, Eye } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { Link } from 'react-router-dom'
 
@@ -79,106 +79,94 @@ export default function AdminOrders() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-center items-center py-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
+      <div className="flex justify-center items-center py-20 min-h-[500px]">
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-900 border-t-transparent"></div>
       </div>
     )
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold">All Orders</h1>
-        <p className="text-gray-600 mt-2">Manage and track all customer orders</p>
+    <div className="max-w-[1600px] mx-auto p-8 text-slate-800">
+      <div className="mb-10">
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900">All Orders</h1>
+        <p className="text-gray-500 mt-1 font-medium">Manage and track customer order fulfillment.</p>
       </div>
 
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Order ID
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Customer
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Date
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Total
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Items
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {orders.map((order) => (
-              <tr key={order.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  #{order.id.slice(0, 8)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <div>
-                    <div className="font-medium text-gray-900">{order.user?.fullName || 'N/A'}</div>
-                    <div className="text-xs text-gray-400">{order.user?.email}</div>
-                    {order.user?.phone && <div className="text-xs text-gray-400">{order.user.phone}</div>}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {new Date(order.orderDate).toLocaleDateString()}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                  ${order.total.toFixed(2)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <select
-                    value={order.status}
-                    onChange={(e) => handleStatusChange(order.id, e.target.value as any)}
-                    className={`text-xs font-semibold px-3 py-1 rounded-full border-0 ${getStatusColor(order.status)}`}
-                    disabled={!!pendingById[order.id]}
-                  >
-                    <option value="PENDING">PENDING</option>
-                    <option value="PROCESSING">PROCESSING</option>
-                    <option value="SHIPPED">SHIPPED</option>
-                    <option value="DELIVERED">DELIVERED</option>
-                    <option value="CANCELLED">CANCELLED</option>
-                  </select>
-                  {pendingById[order.id] && (
-                    <Loader2 className="w-4 h-4 text-gray-400 ml-2 inline align-middle animate-spin" aria-label="Updating status" />
-                  )}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {order.items.length} item(s)
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <Link
-                    to={`/orders/${order.id}`}
-                    className="text-blue-600 hover:text-blue-900 p-2"
-                    title="View Order Details"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </Link>
-                </td>
+      <div className="bg-white/70 backdrop-blur-xl rounded-3xl border border-white/60 shadow-lg shadow-gray-200/50 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50/50 border-b border-gray-100/50">
+              <tr>
+                <th className="px-8 py-5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Order ID</th>
+                <th className="px-8 py-5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Customer</th>
+                <th className="px-8 py-5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
+                <th className="px-8 py-5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Total</th>
+                <th className="px-8 py-5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-8 py-5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Items</th>
+                <th className="px-8 py-5 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-        {orders.length === 0 && (
-          <div className="text-center py-12">
-            <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600">No orders found</p>
-          </div>
-        )}
+            </thead>
+            <tbody className="divide-y divide-gray-100/50 bg-white/30">
+              {orders.map((order) => (
+                <tr key={order.id} className="hover:bg-blue-50/30 transition-colors group">
+                  <td className="px-8 py-5 whitespace-nowrap text-sm font-bold text-gray-900">
+                    <span className="font-mono text-gray-500">#</span>{order.id.slice(0, 8)}
+                  </td>
+                  <td className="px-8 py-5 whitespace-nowrap text-sm text-gray-500">
+                    <div>
+                      <div className="font-bold text-gray-900 mb-0.5">{order.user?.fullName || 'N/A'}</div>
+                      <div className="text-xs text-gray-400 font-medium">{order.user?.email}</div>
+                      {order.user?.phone && <div className="text-xs text-gray-400 font-medium">{order.user.phone}</div>}
+                    </div>
+                  </td>
+                  <td className="px-8 py-5 whitespace-nowrap text-sm text-gray-500 font-medium">
+                    {new Date(order.orderDate).toLocaleDateString()}
+                  </td>
+                  <td className="px-8 py-5 whitespace-nowrap text-sm font-black text-gray-900">
+                    ${order.total.toFixed(2)}
+                  </td>
+                  <td className="px-8 py-5 whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                       <select
+                        value={order.status}
+                        onChange={(e) => handleStatusChange(order.id, e.target.value as any)}
+                        className={`text-xs font-bold px-3 py-1.5 rounded-lg border-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 cursor-pointer shadow-sm transition-all ${getStatusColor(order.status)}`}
+                        disabled={!!pendingById[order.id]}
+                      >
+                        <option value="PENDING">Pending</option>
+                        <option value="PROCESSING">Processing</option>
+                        <option value="SHIPPED">Shipped</option>
+                        <option value="DELIVERED">Delivered</option>
+                        <option value="CANCELLED">Cancelled</option>
+                      </select>
+                      {pendingById[order.id] && (
+                        <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-8 py-5 whitespace-nowrap text-sm text-gray-500 font-medium">
+                    <span className="bg-gray-100 px-2 py-1 rounded-md text-xs">{order.items.length} items</span>
+                  </td>
+                  <td className="px-8 py-5 whitespace-nowrap text-right text-sm font-medium">
+                    <Link
+                      to={`/orders/${order.id}`}
+                      className="inline-flex items-center justify-center w-9 h-9 text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white rounded-xl transition-all duration-200 shadow-sm"
+                      title="View Details"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {orders.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-16 text-gray-500">
+              <Package className="w-16 h-16 text-gray-200 mb-4" />
+              <p className="text-lg font-medium text-gray-400">No recent orders</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

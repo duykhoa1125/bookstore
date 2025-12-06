@@ -26,9 +26,6 @@ export class UserController {
 
   update = async (req: Request, res: Response) => {
     try {
-      if (Object.prototype.hasOwnProperty.call(req.body, 'role')) {
-        return ResponseUtil.error(res, 'Changing user role is not allowed', 403);
-      }
       const existing = await this.userService.findById(req.params.id);
       if (!existing) return ResponseUtil.error(res, "User not found", 404);
       const updated = await this.userService.update(req.params.id, req.body);

@@ -87,8 +87,19 @@ export class OrderService {
   }
 
   async findById(userId: string, orderId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+
+    const where: any = { id: orderId };
+    // Only restrict by userId if not ADMIN
+    if (user?.role !== "ADMIN") {
+      where.userId = userId;
+    }
+
     const order = await prisma.order.findFirst({
-      where: { id: orderId, userId },
+      where,
       include: {
         items: { include: { book: true } },
         payment: { include: { paymentMethod: true } },

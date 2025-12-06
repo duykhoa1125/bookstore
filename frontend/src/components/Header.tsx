@@ -382,6 +382,10 @@ export default function Header() {
                              <Package className="w-4 h-4 mr-3" />
                              My Orders
                           </Link>
+                          <Link to="/my-ratings" className="flex items-center w-full px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-blue-600 rounded-lg transition-colors">
+                             <Star className="w-4 h-4 mr-3" />
+                             My Ratings
+                          </Link>
                           <div className="h-px bg-gray-100 my-1"></div>
                           <button 
                             onClick={handleLogout}

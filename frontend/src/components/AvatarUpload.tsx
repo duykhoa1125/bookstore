@@ -42,13 +42,13 @@ export function AvatarUpload({
 
     // Validate file type
     if (!file.type.startsWith("image/")) {
-      toast.error("Vui lòng chọn file ảnh");
+      toast.error("Please select an image file");
       return;
     }
 
     // Validate file size (5MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("Kích thước file không được vượt quá 5MB");
+      toast.error("File size must not exceed 5MB");
       return;
     }
 
@@ -63,13 +63,13 @@ export function AvatarUpload({
       const response = await api.uploadAvatar(file);
 
       if (response.success && response.data) {
-        toast.success("Cập nhật ảnh đại diện thành công!");
+        toast.success("Avatar updated successfully!");
         onUploadSuccess?.(response.data.image.url);
         setPreview(null);
       }
     } catch (error: unknown) {
       const errorMessage =
-        error instanceof Error ? error.message : "Không thể tải ảnh lên";
+        error instanceof Error ? error.message : "Failed to upload image";
       toast.error(errorMessage);
       setPreview(null);
     } finally {
@@ -114,7 +114,7 @@ export function AvatarUpload({
         onClick={() => fileInputRef.current?.click()}
         disabled={loading}
         className={`absolute bottom-0 right-0 ${buttonSizeClasses[size]} bg-gray-900 hover:bg-gray-800 text-white rounded-full flex items-center justify-center shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
-        title="Thay đổi ảnh đại diện"
+        title="Change Avatar"
       >
         <Camera className={iconSizeClasses[size]} />
       </button>
