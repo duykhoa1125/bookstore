@@ -5,7 +5,8 @@ export const CreateOrderDto = z.object({
   paymentMethodId: z.string(),
 });
 
-export const UpdateOrderStatusDto = z.object({
+// Single DTO for order status updates (used by both regular status updates and admin confirmation)
+export const OrderStatusDto = z.object({
   status: z.enum([
     "PENDING",
     "PROCESSING",
@@ -15,16 +16,11 @@ export const UpdateOrderStatusDto = z.object({
   ]),
 });
 
-export const ConfirmOrderDto = z.object({
-  status: z.enum([
-    "PENDING",
-    "PROCESSING",
-    "SHIPPED",
-    "DELIVERED",
-    "CANCELLED",
-  ]),
-});
+// Aliases for backward compatibility
+export const UpdateOrderStatusDto = OrderStatusDto;
+export const ConfirmOrderDto = OrderStatusDto;
 
 export type CreateOrderInput = z.infer<typeof CreateOrderDto>;
-export type UpdateOrderStatusInput = z.infer<typeof UpdateOrderStatusDto>;
-export type ConfirmOrderInput = z.infer<typeof ConfirmOrderDto>;
+export type OrderStatusInput = z.infer<typeof OrderStatusDto>;
+export type UpdateOrderStatusInput = OrderStatusInput;
+export type ConfirmOrderInput = OrderStatusInput;

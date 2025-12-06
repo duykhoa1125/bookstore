@@ -9,6 +9,8 @@ import type {
   CartItem,
   Order,
   PaymentMethod,
+  Payment,
+  Rating,
   ApiResponse,
   LoginInput,
   RegisterInput,
@@ -205,7 +207,7 @@ class ApiClient {
     stars: number;
     content?: string;
     replaceIfExists?: boolean;
-  }): Promise<ApiResponse<any>> {
+  }): Promise<ApiResponse<Rating>> {
     const response = await this.client.post("/ratings", data);
     return response.data;
   }
@@ -381,7 +383,7 @@ class ApiClient {
   }
 
   // Rating management endpoints
-  async getRatingsByBook(bookId: string): Promise<ApiResponse<any[]>> {
+  async getRatingsByBook(bookId: string): Promise<ApiResponse<Rating[]>> {
     const response = await this.client.get(`/ratings/book/${bookId}`);
     return response.data;
   }
@@ -393,12 +395,12 @@ class ApiClient {
     return response.data;
   }
 
-  async getMyRatings(): Promise<ApiResponse<any[]>> {
+  async getMyRatings(): Promise<ApiResponse<Rating[]>> {
     const response = await this.client.get("/ratings/my-ratings");
     return response.data;
   }
 
-  async getMyRatingForBook(bookId: string): Promise<ApiResponse<any>> {
+  async getMyRatingForBook(bookId: string): Promise<ApiResponse<Rating | null>> {
     const response = await this.client.get(`/ratings/my-rating/${bookId}`);
     return response.data;
   }
@@ -409,7 +411,7 @@ class ApiClient {
       stars?: number;
       content?: string;
     }
-  ): Promise<ApiResponse<any>> {
+  ): Promise<ApiResponse<Rating>> {
     const response = await this.client.patch(`/ratings/${id}`, data);
     return response.data;
   }
@@ -420,7 +422,7 @@ class ApiClient {
   }
 
   // Admin rating endpoints
-  async getAllRatings(): Promise<ApiResponse<any[]>> {
+  async getAllRatings(): Promise<ApiResponse<Rating[]>> {
     const response = await this.client.get("/ratings/all");
     return response.data;
   }
@@ -434,7 +436,7 @@ class ApiClient {
   async processPayment(
     paymentId: string,
     status: "COMPLETED" | "FAILED"
-  ): Promise<ApiResponse<any>> {
+  ): Promise<ApiResponse<Payment>> {
     const response = await this.client.post(`/payments/${paymentId}/process`, {
       status,
     });

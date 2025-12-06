@@ -4,10 +4,12 @@ import { api } from '../lib/api'
 import { Star, Edit2, Trash2, BookOpen, MessageSquare, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { Link } from 'react-router-dom'
+import { Rating } from '../types'
+import { AxiosError } from 'axios'
 
 export default function MyRatings() {
   const queryClient = useQueryClient()
-  const [editingRating, setEditingRating] = useState<any | null>(null)
+  const [editingRating, setEditingRating] = useState<Rating | null>(null)
   const [formData, setFormData] = useState({ stars: 0, content: '' })
 
   const { data: ratingsData, isLoading } = useQuery({
@@ -24,7 +26,7 @@ export default function MyRatings() {
       setEditingRating(null)
       setFormData({ stars: 0, content: '' })
     },
-    onError: (error: any) => {
+    onError: (error: AxiosError<{ message?: string }>) => {
       toast.error(error.response?.data?.message || 'Failed to update review')
     },
   })
@@ -35,14 +37,14 @@ export default function MyRatings() {
       queryClient.invalidateQueries({ queryKey: ['my-ratings'] })
       toast.success('Review deleted successfully')
     },
-    onError: (error: any) => {
+    onError: (error: AxiosError<{ message?: string }>) => {
       toast.error(error.response?.data?.message || 'Failed to delete review')
     },
   })
 
   const ratings = ratingsData?.data || []
 
-  const handleEdit = (rating: any) => {
+  const handleEdit = (rating: Rating) => {
     setEditingRating(rating)
     setFormData({
       stars: rating.stars,
@@ -56,6 +58,8 @@ export default function MyRatings() {
       toast.error('Please select a rating')
       return
     }
+
+    if (!editingRating) return
 
     updateMutation.mutate({
       id: editingRating.id,

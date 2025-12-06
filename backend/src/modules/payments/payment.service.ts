@@ -5,7 +5,13 @@ export class PaymentService {
   async processPayment(userId: string, paymentId: string, data: ProcessPaymentInput) {
     const payment = await prisma.payment.findUnique({
       where: { id: paymentId },
-      include: { order: true },
+      include: {
+        order: {
+          include: {
+            items: true,
+          },
+        },
+      },
     });
 
     if (!payment) {
@@ -21,21 +27,45 @@ export class PaymentService {
       throw new Error("Payment already completed");
     }
 
-    const updatedPayment = await prisma.payment.update({
-      where: { id: paymentId },
-      data: {
-        status: data.status,
-        paymentDate: data.status === "COMPLETED" ? new Date() : null,
-      },
-    });
-
-    if (data.status === "COMPLETED") {
-      await prisma.order.update({
-        where: { id: payment.orderId },
-        data: { status: "PROCESSING" },
-      });
+    if (payment.status === "FAILED") {
+      throw new Error("Payment already failed");
     }
 
-    return updatedPayment;
+    // Use transaction for atomicity
+    const result = await prisma.$transaction(async (tx) => {
+      const updatedPayment = await tx.payment.update({
+        where: { id: paymentId },
+        data: {
+          status: data.status,
+          paymentDate: data.status === "COMPLETED" ? new Date() : null,
+        },
+      });
+
+      if (data.status === "COMPLETED") {
+        // Update order status to PROCESSING
+        await tx.order.update({
+          where: { id: payment.orderId },
+          data: { status: "PROCESSING" },
+        });
+      } else if (data.status === "FAILED") {
+        // Restore stock for all items in the order
+        for (const item of payment.order.items) {
+          await tx.book.update({
+            where: { id: item.bookId },
+            data: { stock: { increment: item.quantity } },
+          });
+        }
+
+        // Update order status to CANCELLED
+        await tx.order.update({
+          where: { id: payment.orderId },
+          data: { status: "CANCELLED" },
+        });
+      }
+
+      return updatedPayment;
+    });
+
+    return result;
   }
 }

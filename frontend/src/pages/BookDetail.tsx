@@ -16,6 +16,19 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useState } from "react";
+import { AxiosError } from "axios";
+
+interface BookRating {
+  id: string;
+  stars: number;
+  content?: string;
+  createdAt: string;
+  user?: {
+    fullName?: string;
+    avatar?: string;
+    username?: string;
+  };
+}
 
 export default function BookDetail() {
   const { id } = useParams<{ id: string }>();
@@ -46,7 +59,7 @@ export default function BookDetail() {
       toast.success("Added to cart!");
       setQuantity(1);
     },
-    onError: (error: any) => {
+    onError: (error: AxiosError<{ message?: string }>) => {
       toast.error(error.response?.data?.message || "Failed to add to cart");
     },
   });
@@ -61,7 +74,7 @@ export default function BookDetail() {
       setRatingStars(0);
       setRatingContent("");
     },
-    onError: (error: any, variables) => {
+    onError: (error: AxiosError<{ message?: string }>, variables) => {
       if (error?.response?.status === 409) {
         toast((t) => (
           <div className="flex flex-col gap-2">
@@ -84,7 +97,7 @@ export default function BookDetail() {
               </button>
             </div>
           </div>
-        ) as any);
+        ));
         return;
       }
       toast.error(error?.response?.data?.message || "Failed to add rating");
@@ -445,7 +458,7 @@ export default function BookDetail() {
              
              <div className="space-y-4">
               {ratingsData?.data && ratingsData.data.length > 0 ? (
-                ratingsData.data.map((rating: any) => (
+                ratingsData.data.map((rating: BookRating) => (
                   <div
                     key={rating.id}
                     className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm"

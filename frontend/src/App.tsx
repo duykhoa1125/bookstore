@@ -3,6 +3,7 @@ import { useAuth } from './contexts/AuthContext'
 import Layout from './components/Layout'
 import AdminRoute from './components/AdminRoute'
 import AdminLayout from './components/admin/AdminLayout'
+import ErrorBoundary from './components/ErrorBoundary'
 import Home from './pages/Home'
 import Books from './pages/Books'
 import BookDetail from './pages/BookDetail'
@@ -57,8 +58,9 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
           <Route path="books" element={<Books />} />
@@ -151,8 +153,9 @@ function App() {
           <Route path="payment-methods" element={<AdminPaymentMethods />} />
           <Route path="users" element={<AdminUsers />} />
         </Route>
-      </Routes>
-    </BrowserRouter>
+        </Routes>
+      </BrowserRouter>
+    </ErrorBoundary>
   )
 }
 

@@ -12,6 +12,7 @@ import { QuickViewModal } from '../components/QuickViewModal'
 import { AuthorSpotlight } from '../components/AuthorSpotlight'
 import { StatsMilestones } from '../components/StatsMilestones'
 import { Book } from '../types'
+import { AxiosError } from 'axios'
 
 export default function Home() {
   const { user } = useAuth()
@@ -29,7 +30,7 @@ export default function Home() {
   const { data: booksData, isLoading, error } = useQuery({
     queryKey: ['books', 'featured'],
     queryFn: () => api.getBooks(),
-    retry: (failureCount, error: any) => {
+    retry: (failureCount, error: AxiosError) => {
       if (error?.response?.status === 429) {
         return false;
       }
@@ -49,13 +50,22 @@ export default function Home() {
     return () => clearInterval(timer)
   }, [heroBooks.length])
   
-  // Parallax scroll effect
+  // Parallax scroll effect with throttle to prevent excessive re-renders
   useEffect(() => {
+    let ticking = false;
+    
     const handleScroll = () => {
-      setScrollY(window.scrollY)
-    }
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          setScrollY(window.scrollY);
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+    
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
   }, [])
 
   const nextSlide = () => {
@@ -78,7 +88,7 @@ export default function Home() {
       toast.success('Book added to cart!')
       setIsQuickViewOpen(false) // Close modal after adding to cart
     },
-    onError: (error: any) => {
+    onError: (error: AxiosError<{ message?: string }>) => {
       toast.error(error.response?.data?.message || 'Failed to add to cart')
     },
   })

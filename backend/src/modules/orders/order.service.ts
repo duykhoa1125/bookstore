@@ -92,7 +92,7 @@ export class OrderService {
       select: { role: true },
     });
 
-    const where: any = { id: orderId };
+    const where: { id: string; userId?: string } = { id: orderId };
     // Only restrict by userId if not ADMIN
     if (user?.role !== "ADMIN") {
       where.userId = userId;
@@ -162,9 +162,9 @@ export class OrderService {
   async getAllOrders(params: {
     status?: string;
   }) {
-    const where: any = {};
+    const where: { status?: "PENDING" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED" } = {};
     if (params.status) {
-      where.status = params.status;
+      where.status = params.status as "PENDING" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED";
     }
 
     const orders = await prisma.order.findMany({

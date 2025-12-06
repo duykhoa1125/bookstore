@@ -1,10 +1,15 @@
 import { Request, Response, NextFunction } from "express";
 import { Prisma } from "@prisma/client";
 import { ResponseUtil } from "../utils/response.util";
+import { logger } from "../utils/logger.util";
 
 export class ErrorMiddleware {
-  static handle(err: any, req: Request, res: Response, next: NextFunction) {
-    console.error("Error:", err);
+  static handle(err: Error, req: Request, res: Response, _next: NextFunction) {
+    logger.error("Unhandled error", err, {
+      method: req.method,
+      path: req.path,
+      query: req.query,
+    });
 
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2002") {

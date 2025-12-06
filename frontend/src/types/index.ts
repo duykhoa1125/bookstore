@@ -67,6 +67,10 @@ export interface Rating {
   createdAt: string;
   updatedAt: string;
   user?: User;
+  book?: {
+    title: string;
+    imageUrl?: string;
+  };
 }
 
 export interface CartItem {

@@ -1,5 +1,6 @@
 import prisma from "../../config/database";
 import { CreateBookInput, UpdateBookInput } from "./book.dto";
+import { Prisma } from "@prisma/client";
 
 export class BookService {
   async create(data: CreateBookInput) {
@@ -30,7 +31,7 @@ export class BookService {
     sortBy?: "price" | "rating";
     order?: "asc" | "desc";
   }) {
-    const where: any = {};
+    const where: Prisma.BookWhereInput = {};
 
     if (params.categoryId) {
       where.categoryId = params.categoryId;
@@ -84,7 +85,7 @@ export class BookService {
     }
 
     // Determine base sorting for DB query. We can sort by price in DB; rating will be sorted in-memory after aggregation
-    let orderBy: any = { createdAt: "desc" };
+    let orderBy: Prisma.BookOrderByWithRelationInput = { createdAt: "desc" };
     if (params.sortBy === "price" && (params.order === "asc" || params.order === "desc")) {
       orderBy = { price: params.order };
     }
@@ -101,10 +102,10 @@ export class BookService {
 
     // Get average ratings using database aggregation for better performance
     const bookIds = books.map((book) => book.id);
-    
+
     // Only fetch ratings if there are books
     let ratingsMap = new Map<string, number>();
-    
+
     if (bookIds.length > 0) {
       const ratingsData = await prisma.$queryRaw<
         Array<{ bookId: string; averageRating: number }>
@@ -160,7 +161,7 @@ export class BookService {
     const averageRating =
       book.ratings.length > 0
         ? book.ratings.reduce((sum, r) => sum + r.stars, 0) /
-          book.ratings.length
+        book.ratings.length
         : 0;
 
     return { ...book, averageRating };
@@ -169,7 +170,7 @@ export class BookService {
   async update(id: string, data: UpdateBookInput) {
     const { authorIds, ...bookData } = data;
 
-    const updateData: any = { ...bookData };
+    const updateData: Prisma.BookUpdateInput = { ...bookData };
 
     if (authorIds) {
       updateData.authors = {
