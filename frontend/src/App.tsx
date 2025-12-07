@@ -4,6 +4,7 @@ import Layout from './components/Layout'
 import AdminRoute from './components/AdminRoute'
 import AdminLayout from './components/admin/AdminLayout'
 import ErrorBoundary from './components/ErrorBoundary'
+import ScrollToTop from './components/ScrollToTop'
 import Home from './pages/Home'
 import Books from './pages/Books'
 import BookDetail from './pages/BookDetail'
@@ -60,6 +61,7 @@ function App() {
   return (
     <ErrorBoundary>
       <BrowserRouter>
+        <ScrollToTop />
         <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
