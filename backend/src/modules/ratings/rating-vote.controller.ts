@@ -20,7 +20,7 @@ export class RatingVoteController {
             if (!parsed.success) {
                 return ResponseUtil.error(res, 'Validation failed', {
                     statusCode: 400,
-                    errors: parsed.error.errors,
+                    errors: parsed.error.issues,
                 });
             }
 
