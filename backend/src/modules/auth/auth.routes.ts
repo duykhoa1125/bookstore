@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { AuthController } from "./auth.controller";
 import { ValidationMiddleware } from "../../middleware/validation.middleware";
-import { LoginDto, RegisterDto, UpdateUserDto } from "./auth.dto";
+import { LoginDto, RegisterDto, UpdateUserDto, ForgotPasswordDto, ResetPasswordDto } from "./auth.dto";
 import { AuthMiddleware } from "../../middleware/auth.middleware";
 import { GoogleAuthDto } from "./google-auth.dto";
 
@@ -27,6 +27,18 @@ router.post(
   authController.googleLogin
 );
 
+// Password reset routes
+router.post(
+  "/forgot-password",
+  ValidationMiddleware.validate(ForgotPasswordDto),
+  authController.forgotPassword
+);
+
+router.post(
+  "/reset-password",
+  ValidationMiddleware.validate(ResetPasswordDto),
+  authController.resetPassword
+);
 
 router.get("/profile", AuthMiddleware.authenticate, authController.getProfile);
 

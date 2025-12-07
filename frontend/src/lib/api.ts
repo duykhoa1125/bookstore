@@ -112,6 +112,17 @@ class ApiClient {
     return response.data;
   }
 
+  // Password Reset
+  async forgotPassword(email: string): Promise<ApiResponse<{ message: string }>> {
+    const response = await this.client.post("/auth/forgot-password", { email });
+    return response.data;
+  }
+
+  async resetPassword(token: string, password: string): Promise<ApiResponse<{ message: string }>> {
+    const response = await this.client.post("/auth/reset-password", { token, password });
+    return response.data;
+  }
+
   // Book endpoints
   async getBooks(params?: {
     categoryId?: string;

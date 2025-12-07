@@ -47,12 +47,26 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  cart            Cart?
-  orders          Order[]        @relation("UserOrders") 
-  confirmedOrders Order[]        @relation("AdminConfirmedOrders") 
-  ratings         Rating[]
+  cart                Cart?
+  orders              Order[]              @relation("UserOrders") 
+  confirmedOrders     Order[]              @relation("AdminConfirmedOrders") 
+  ratings             Rating[]
+  passwordResetTokens PasswordResetToken[]
 
   @@map("users")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String   @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_reset_tokens")
 }
 
 model Category {

@@ -1,8 +1,10 @@
 import prisma from "../../config/database";
 import { PasswordUtil } from "../../utils/password.util";
 import { JwtUtil } from "../../utils/jwt.util";
+import { EmailUtil } from "../../utils/email.util";
 import { RegisterInput, LoginInput } from "./auth.dto";
 import { OAuth2Client } from "google-auth-library";
+import crypto from "crypto";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -217,5 +219,82 @@ export class AuthService {
     });
 
     return user;
+  }
+
+  async forgotPassword(email: string) {
+    // Find user by email
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    // Always return success to prevent email enumeration
+    if (!user) {
+      return { message: "If an account exists with this email, you will receive a password reset link." };
+    }
+
+    // Check if user has password (OAuth users can't reset password)
+    if (!user.password) {
+      return { message: "If an account exists with this email, you will receive a password reset link." };
+    }
+
+    // Invalidate any existing tokens for this user
+    await prisma.passwordResetToken.updateMany({
+      where: { userId: user.id, used: false },
+      data: { used: true },
+    });
+
+    // Generate secure random token
+    const token = crypto.randomBytes(32).toString("hex");
+
+    // Create password reset token (expires in 1 hour)
+    await prisma.passwordResetToken.create({
+      data: {
+        token,
+        userId: user.id,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
+      },
+    });
+
+    // Send email
+    await EmailUtil.sendPasswordResetEmail(email, token);
+
+    return { message: "If an account exists with this email, you will receive a password reset link." };
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    // Find valid token
+    const resetToken = await prisma.passwordResetToken.findUnique({
+      where: { token },
+      include: { user: true },
+    });
+
+    if (!resetToken) {
+      throw new Error("Invalid or expired reset token");
+    }
+
+    if (resetToken.used) {
+      throw new Error("This reset link has already been used");
+    }
+
+    if (resetToken.expiresAt < new Date()) {
+      throw new Error("This reset link has expired");
+    }
+
+    // Hash new password
+    const hashedPassword = await PasswordUtil.hash(newPassword);
+
+    // Update password and mark token as used
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: resetToken.userId },
+        data: { password: hashedPassword },
+      }),
+      prisma.passwordResetToken.update({
+        where: { id: resetToken.id },
+        data: { used: true },
+      }),
+    ]);
+
+    return { message: "Password reset successfully" };
   }
 }

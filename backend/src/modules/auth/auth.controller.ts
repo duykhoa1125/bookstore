@@ -60,4 +60,23 @@ export class AuthController {
       return ResponseUtil.error(res, error.message);
     }
   };
+
+  forgotPassword = async (req: Request, res: Response) => {
+    try {
+      const result = await this.authService.forgotPassword(req.body.email);
+      return ResponseUtil.success(res, result, result.message);
+    } catch (error: any) {
+      return ResponseUtil.error(res, error.message);
+    }
+  };
+
+  resetPassword = async (req: Request, res: Response) => {
+    try {
+      const { token, password } = req.body;
+      const result = await this.authService.resetPassword(token, password);
+      return ResponseUtil.success(res, result, result.message);
+    } catch (error: any) {
+      return ResponseUtil.error(res, error.message, 400);
+    }
+  };
 }

@@ -190,11 +190,21 @@ export default function Login() {
                 </button>
               </div>
 
+              {/* Forgot Password Link */}
+              <div className="flex justify-end">
+                <Link
+                  to="/forgot-password"
+                  className="text-sm text-slate-500 hover:text-blue-600 transition-colors font-medium"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+
               {/* Submit Button - Solid Color, No Gradient */}
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3.5 px-6 bg-slate-900 text-white font-semibold rounded-lg hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2 group mt-4"
+                className="w-full py-3.5 px-6 bg-slate-900 text-white font-semibold rounded-lg hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2 group mt-2"
               >
                 {loading ? (
                   <>

@@ -39,6 +39,7 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
     "prisma": "^6.9.1",
+    "resend": "^6.5.2",
     "typescript": "^5.9.3",
     "zod": "^4.1.12"
   },

@@ -30,6 +30,17 @@ export const UpdateUserDto = z.object({
   position: z.string().optional(),
 });
 
+export const ForgotPasswordDto = z.object({
+  email: z.string().email(),
+});
+
+export const ResetPasswordDto = z.object({
+  token: z.string().min(1),
+  password: z.string().min(6),
+});
+
 export type RegisterInput = z.infer<typeof RegisterDto>;
 export type LoginInput = z.infer<typeof LoginDto>;
 export type UpdateUserInput = z.infer<typeof UpdateUserDto>;
+export type ForgotPasswordInput = z.infer<typeof ForgotPasswordDto>;
+export type ResetPasswordInput = z.infer<typeof ResetPasswordDto>;
