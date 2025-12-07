@@ -5,6 +5,7 @@ import { Plus, Edit, Trash2, Users } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Modal from '../../components/Modal'
 import ConfirmModal from '../../components/ConfirmModal'
+import Pagination from '../../components/Pagination'
 
 export default function AdminAuthors() {
   const queryClient = useQueryClient()
@@ -12,6 +13,8 @@ export default function AdminAuthors() {
   const [editingAuthor, setEditingAuthor] = useState<{ id: string; name: string } | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [name, setName] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 15
 
   const { data: authorsData, isLoading } = useQuery({
     queryKey: ['authors'],
@@ -58,6 +61,13 @@ export default function AdminAuthors() {
   })
 
   const authors = authorsData?.data || []
+
+  // Pagination logic
+  const totalPages = Math.ceil(authors.length / itemsPerPage)
+  const paginatedAuthors = authors.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  )
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -169,7 +179,7 @@ export default function AdminAuthors() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100/50 bg-white/30">
-                {authors.map((author) => (
+                {paginatedAuthors.map((author) => (
                   <tr key={author.id} className="hover:bg-blue-50/30 transition-colors group">
                     <td className="px-8 py-5 whitespace-nowrap">
                       <div className="flex items-center">
@@ -208,6 +218,19 @@ export default function AdminAuthors() {
               </div>
             )}
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="px-6 py-4 border-t border-gray-100">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                itemsPerPage={itemsPerPage}
+                totalItems={authors.length}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

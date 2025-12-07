@@ -5,6 +5,7 @@ import { Plus, Edit, Trash2, Building2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Modal from '../../components/Modal'
 import ConfirmModal from '../../components/ConfirmModal'
+import Pagination from '../../components/Pagination'
 
 export default function AdminPublishers() {
   const queryClient = useQueryClient()
@@ -12,6 +13,8 @@ export default function AdminPublishers() {
   const [editingPublisher, setEditingPublisher] = useState<{ id: string; name: string } | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [name, setName] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
 
   const { data: publishersData, isLoading } = useQuery({
     queryKey: ['publishers'],
@@ -58,6 +61,13 @@ export default function AdminPublishers() {
   })
 
   const publishers = publishersData?.data || []
+
+  // Pagination logic
+  const totalPages = Math.ceil(publishers.length / itemsPerPage)
+  const paginatedPublishers = publishers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  )
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -168,7 +178,7 @@ export default function AdminPublishers() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100/50 bg-white/30">
-                {publishers.map((publisher) => (
+                {paginatedPublishers.map((publisher) => (
                   <tr key={publisher.id} className="hover:bg-blue-50/30 transition-colors group">
                     <td className="px-8 py-5 whitespace-nowrap">
                       <div className="flex items-center">
@@ -207,6 +217,19 @@ export default function AdminPublishers() {
               </div>
             )}
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="px-6 py-4 border-t border-gray-100">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                itemsPerPage={itemsPerPage}
+                totalItems={publishers.length}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

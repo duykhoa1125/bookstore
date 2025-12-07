@@ -5,6 +5,7 @@ import { Plus, Edit, Trash2, FolderTree } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Modal from '../../components/Modal'
 import ConfirmModal from '../../components/ConfirmModal'
+import Pagination from '../../components/Pagination'
 
 export default function AdminCategories() {
   const queryClient = useQueryClient()
@@ -12,6 +13,8 @@ export default function AdminCategories() {
   const [editingCategory, setEditingCategory] = useState<{ id: string; name: string } | null>(null)
   const [formData, setFormData] = useState({ name: '', parentCategoryId: '' })
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
 
   const { data: categoriesData, isLoading } = useQuery({
     queryKey: ['categories'],
@@ -58,6 +61,13 @@ export default function AdminCategories() {
   })
 
   const categories = categoriesData?.data || []
+
+  // Pagination logic
+  const totalPages = Math.ceil(categories.length / itemsPerPage)
+  const paginatedCategories = categories.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  )
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -177,7 +187,7 @@ export default function AdminCategories() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100/50 bg-white/30">
-                {categories.map((category) => (
+                {paginatedCategories.map((category) => (
                   <tr key={category.id} className="hover:bg-blue-50/30 transition-colors group">
                     <td className="px-8 py-5 whitespace-nowrap">
                       <div className="flex items-center">
@@ -217,6 +227,19 @@ export default function AdminCategories() {
               </div>
             )}
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="px-6 py-4 border-t border-gray-100">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                itemsPerPage={itemsPerPage}
+                totalItems={categories.length}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>
