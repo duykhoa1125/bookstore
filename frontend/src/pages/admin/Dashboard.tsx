@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import { api } from '../../lib/api'
 import { 
   DollarSign, 
@@ -585,9 +586,12 @@ export default function AdminDashboardOverview() {
         <div className="lg:col-span-2 bg-white/70 backdrop-blur-xl rounded-3xl border border-white/60 shadow-lg shadow-gray-200/50 overflow-hidden">
           <div className="px-8 py-6 border-b border-gray-100/50 flex justify-between items-center">
             <h2 className="text-xl font-bold text-gray-900">Recent Orders</h2>
-            <button className="text-sm font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 py-1 rounded-lg transition-colors">
+            <Link 
+              to="/admin/orders"
+              className="text-sm font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 py-1 rounded-lg transition-colors"
+            >
               View All
-            </button>
+            </Link>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { BookOpen, Award, Sparkles, ArrowRight, ChevronLeft, ChevronRight, Mail, Truck } from 'lucide-react'
 import { BookCard } from '../components/BookCard'
+import { BookGridSkeleton } from '../components/SkeletonLoaders'
 import toast from 'react-hot-toast'
 import { useAuth } from '../contexts/AuthContext'
 import { useState, useEffect, useRef } from 'react'
@@ -289,9 +290,7 @@ export default function Home() {
           </div>
           
           {isLoading ? (
-             <div className="flex justify-center py-20">
-                <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
-             </div>
+             <BookGridSkeleton count={8} />
           ) : error ? (
              <div className="text-center py-10 bg-red-50 rounded-xl text-red-600">
                 Error loading books. Please try again later.

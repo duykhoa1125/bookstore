@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { Search, ChevronDown, ChevronLeft, ChevronRight, X, Star, SlidersHorizontal, Tag, DollarSign, Sparkles } from 'lucide-react'
 import { BookCard } from '../components/BookCard'
+import { BookGridSkeleton } from '../components/SkeletonLoaders'
 import toast from 'react-hot-toast'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -560,11 +561,7 @@ export default function Books() {
 
              {/* Content Grid */}
              {booksLoading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                   {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                      <div key={i} className="aspect-[2/3] bg-gray-100 rounded-2xl animate-pulse"></div>
-                   ))}
-                </div>
+                <BookGridSkeleton count={8} />
              ) : paginatedBooks.length > 0 ? (
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-10">

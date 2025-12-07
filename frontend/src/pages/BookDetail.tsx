@@ -14,6 +14,7 @@ import {
   Truck,
   RotateCcw
 } from "lucide-react";
+import { BookDetailSkeleton } from "../components/SkeletonLoaders";
 import toast from "react-hot-toast";
 import { useState } from "react";
 import { AxiosError } from "axios";
@@ -147,11 +148,7 @@ export default function BookDetail() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-[60vh] bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
-      </div>
-    );
+    return <BookDetailSkeleton />;
   }
 
   const book = bookData?.data;

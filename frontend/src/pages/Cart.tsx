@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { Trash2, Plus, Minus, ShoppingBag, CreditCard, MapPin, Truck, ArrowRight, ShieldCheck } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
+import { CartSkeleton } from '../components/SkeletonLoaders'
 import toast from 'react-hot-toast'
 import { useState, useEffect } from 'react'
 
@@ -105,13 +106,7 @@ export default function Cart() {
   const paymentMethods = paymentMethodsData?.data || []
 
   if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-center items-center py-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      </div>
-    )
+    return <CartSkeleton />
   }
 
   if (!cart || cart.items.length === 0) {
