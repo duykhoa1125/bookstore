@@ -385,10 +385,21 @@ export default function AdminDashboardOverview() {
           <div className="h-[350px]">
             {revenueData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={revenueData}>
+                <LineChart data={revenueData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
                   <XAxis dataKey="monthDisplay" stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} dy={10} />
-                  <YAxis stroke="#9ca3af" fontSize={12} tickFormatter={(value) => `$${value}`} tickLine={false} axisLine={false} dx={-10} />
+                  <YAxis 
+                    stroke="#9ca3af" 
+                    fontSize={11} 
+                    tickFormatter={(value) => {
+                      if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+                      if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`;
+                      return `$${value}`;
+                    }} 
+                    tickLine={false} 
+                    axisLine={false} 
+                    width={60}
+                  />
                   <Tooltip 
                     contentStyle={{ 
                       backgroundColor: 'rgba(255, 255, 255, 0.9)', 
@@ -402,12 +413,12 @@ export default function AdminDashboardOverview() {
                     formatter={(value: number) => [`$${value.toFixed(2)}`, 'Revenue']}
                   />
                   <Line 
-                    type="natural" 
+                    type="monotone" 
                     dataKey="revenue" 
                     stroke="#6366f1" 
-                    strokeWidth={4}
+                    strokeWidth={3}
                     dot={false}
-                    activeDot={{ r: 8, stroke: '#4f46e5', strokeWidth: 0, fill: '#6366f1' }}
+                    activeDot={{ r: 6, stroke: '#4f46e5', strokeWidth: 0, fill: '#6366f1' }}
                   />
                   <defs>
                     <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
