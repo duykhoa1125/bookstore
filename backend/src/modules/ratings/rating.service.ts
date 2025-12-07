@@ -15,6 +15,42 @@ export class RatingService {
     return count > 0;
   }
 
+  private async calculateVoteCounts(ratingId: string) {
+    const votes = await prisma.ratingVote.findMany({
+      where: { ratingId },
+    });
+
+    const upvotes = votes.filter((vote) => vote.voteType === 1).length;
+    const downvotes = votes.filter((vote) => vote.voteType === -1).length;
+
+    return { upvotes, downvotes };
+  }
+
+  private async addVotesToRating(rating: any, userId?: string) {
+    const voteCounts = await this.calculateVoteCounts(rating.id);
+
+    let userVote = null;
+    if (userId) {
+      const vote = await prisma.ratingVote.findUnique({
+        where: {
+          ratingId_userId: {
+            ratingId: rating.id,
+            userId,
+          },
+        },
+      });
+      userVote = vote ? vote.voteType : null;
+    }
+
+    return {
+      ...rating,
+      upvotes: voteCounts.upvotes,
+      downvotes: voteCounts.downvotes,
+      userVote,
+    };
+  }
+
+
   async create(userId: string, data: CreateRatingInput) {
     const purchased = await this.hasPurchased(userId, data.bookId);
     if (!purchased) {
@@ -35,14 +71,19 @@ export class RatingService {
     return rating;
   }
 
-  async findByBook(bookId: string) {
+  async findByBook(bookId: string, userId?: string) {
     const ratings = await prisma.rating.findMany({
       where: { bookId },
       include: { user: { select: { fullName: true, avatar: true } } },
       orderBy: { createdAt: "desc" },
     });
 
-    return ratings;
+    // Add vote counts and user's vote to each rating
+    const ratingsWithVotes = await Promise.all(
+      ratings.map((rating) => this.addVotesToRating(rating, userId))
+    );
+
+    return ratingsWithVotes;
   }
 
   async update(userId: string, ratingId: string, data: UpdateRatingInput) {

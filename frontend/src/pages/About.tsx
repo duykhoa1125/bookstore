@@ -243,18 +243,6 @@ export default function About() {
               ))}
             </Marquee>
           </div>
-
-          {/* Bottom CTA */}
-          <div className="mt-20 text-center">
-            <p className="text-gray-300 text-lg mb-6">
-              Move your cursor to interact with the geometric patterns
-            </p>
-            <div className="inline-flex items-center gap-2 text-purple-400 text-sm font-medium">
-              <Star className="w-4 h-4 animate-pulse" />
-              <span>Dynamic • Interactive • Beautiful</span>
-              <Star className="w-4 h-4 animate-pulse" />
-            </div>
-          </div>
         </div>
       </section>
 

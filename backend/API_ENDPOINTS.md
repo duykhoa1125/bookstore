@@ -494,17 +494,48 @@ Trả về danh sách sách có cùng category hoặc authors với sách hiện
 
 | Method | Endpoint              | Mô tả                           | Auth       |
 | ------ | --------------------- | ------------------------------- | ---------- |
-| GET    | `/book/:bookId`       | Lấy đánh giá của sách           | ❌         |
+| GET    | `/book/:bookId`       | Lấy đánh giá của sách           | ❌ (Optional Auth) |
 | GET    | `/book/:bookId/average` | Lấy điểm trung bình của sách  | ❌         |
 | GET    | `/my-ratings`         | Lấy tất cả đánh giá của user    | ✅ User    |
 | GET    | `/my-rating/:bookId`  | Lấy đánh giá của user cho sách cụ thể | ✅ User |
 | POST   | `/`                   | Tạo đánh giá mới                | ✅ User    |
 | PATCH  | `/:id`                | Cập nhật đánh giá               | ✅ User    |
 | DELETE | `/:id`                | Xóa đánh giá của user           | ✅ User    |
+| POST   | `/:id/vote`           | Vote (upvote/downvote) cho đánh giá | ✅ User |
+| DELETE | `/:id/vote`           | Xóa vote của user               | ✅ User    |
+| GET    | `/:id/vote`           | Lấy vote của user cho đánh giá  | ✅ User    |
 | GET    | `/all`                | Lấy tất cả đánh giá (Admin)     | ✅ Admin   |
 | DELETE | `/admin/:id`          | Xóa đánh giá bất kỳ (Admin)     | ✅ Admin   |
 
 ### Request/Response Details
+
+#### GET `/book/:bookId` - Lấy đánh giá của sách
+
+> 💡 **Lưu ý:** Endpoint này hỗ trợ Optional Authentication. Nếu user đã đăng nhập, response sẽ bao gồm trạng thái vote của user cho từng đánh giá.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "string",
+      "userId": "string",
+      "bookId": "string",
+      "stars": 5,
+      "content": "Great book!",
+      "createdAt": "2024-01-01T00:00:00Z",
+      "user": {
+        "fullName": "Nguyễn Văn A",
+        "avatar": "https://..."
+      },
+      "upvotes": 10,
+      "downvotes": 2,
+      "userVote": 1
+    }
+  ]
+}
+```
 
 #### POST `/` - Tạo đánh giá
 
@@ -527,6 +558,31 @@ Trả về danh sách sách có cùng category hoặc authors với sách hiện
   "content": "string (tùy chọn)"
 }
 ```
+
+#### POST `/:id/vote` - Vote cho đánh giá
+
+Cho phép user upvote hoặc downvote một đánh giá của người khác. Nếu đã vote cùng loại, vote sẽ bị xóa (toggle). Nếu đã vote khác loại, vote sẽ được cập nhật.
+
+> ⚠️ **Lưu ý:** User không thể vote cho đánh giá của chính mình.
+
+**Request Body:**
+```json
+{
+  "voteType": "number (1 = upvote, -1 = downvote, bắt buộc)"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": { "message": "Vote created successfully" }
+}
+```
+
+**Các response khác:**
+- `"Vote updated successfully"` - Khi chuyển từ upvote sang downvote hoặc ngược lại
+- `"Vote removed successfully"` - Khi click lại cùng loại vote (toggle off)
 
 ---
 

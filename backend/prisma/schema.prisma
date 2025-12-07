@@ -51,6 +51,7 @@ model User {
   orders              Order[]              @relation("UserOrders") 
   confirmedOrders     Order[]              @relation("AdminConfirmedOrders") 
   ratings             Rating[]
+  ratingVotes         RatingVote[]
   passwordResetTokens PasswordResetToken[]
 
   @@map("users")
@@ -246,7 +247,22 @@ model Rating {
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  votes     RatingVote[]
 
   @@unique([userId, bookId])
   @@map("ratings")
+}
+
+model RatingVote {
+  id        String   @id @default(cuid())
+  ratingId  String   @map("rating_id")
+  userId    String   @map("user_id")
+  voteType  Int      // 1 = upvote, -1 = downvote
+  createdAt DateTime @default(now())
+
+  rating    Rating   @relation(fields: [ratingId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([ratingId, userId])
+  @@map("rating_votes")
 }

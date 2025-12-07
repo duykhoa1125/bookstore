@@ -453,6 +453,21 @@ class ApiClient {
     return response.data;
   }
 
+  // Rating vote endpoints
+  async voteRating(
+    ratingId: string,
+    voteType: 1 | -1
+  ): Promise<ApiResponse<{ message: string }>> {
+    const response = await this.client.post(`/ratings/${ratingId}/vote`, { voteType });
+    return response.data;
+  }
+
+  async removeRatingVote(ratingId: string): Promise<ApiResponse<{ message: string }>> {
+    const response = await this.client.delete(`/ratings/${ratingId}/vote`);
+    return response.data;
+  }
+
+
   // Payment processing endpoint
   async processPayment(
     paymentId: string,

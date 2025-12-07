@@ -71,6 +71,9 @@ export interface Rating {
     title: string;
     imageUrl?: string;
   };
+  upvotes?: number;
+  downvotes?: number;
+  userVote?: 1 | -1 | null;
 }
 
 export interface CartItem {

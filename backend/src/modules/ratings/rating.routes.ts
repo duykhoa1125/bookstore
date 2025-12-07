@@ -1,14 +1,16 @@
 import { Router } from "express";
 import { RatingController } from "./rating.controller";
+import { RatingVoteController } from "./rating-vote.controller";
 import { AuthMiddleware } from "../../middleware/auth.middleware";
 import { ValidationMiddleware } from "../../middleware/validation.middleware";
 import { CreateRatingDto, UpdateRatingDto } from "./rating.dto";
 
 const router = Router();
 const ratingController = new RatingController();
+const ratingVoteController = new RatingVoteController();
 
-// Public routes
-router.get("/book/:bookId", ratingController.findByBook);
+// Public routes (with optional auth to get user's vote status)
+router.get("/book/:bookId", AuthMiddleware.optionalAuthenticate, ratingController.findByBook);
 router.get("/book/:bookId/average", ratingController.getBookAverageRating);
 
 // Protected routes (user must be authenticated)
@@ -31,6 +33,11 @@ router.patch(
 
 router.delete("/:id", ratingController.delete);
 
+// Voting routes (must be authenticated)
+router.post("/:id/vote", ratingVoteController.voteRating);
+router.delete("/:id/vote", ratingVoteController.removeVote);
+router.get("/:id/vote", ratingVoteController.getUserVote);
+
 // Admin routes
 router.get("/all", AuthMiddleware.authorize("ADMIN"), ratingController.findAll);
 
@@ -41,3 +48,4 @@ router.delete(
 );
 
 export default router;
+

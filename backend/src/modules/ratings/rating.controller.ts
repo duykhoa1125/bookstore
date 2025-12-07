@@ -37,7 +37,8 @@ export class RatingController {
 
   findByBook = async (req: Request, res: Response) => {
     try {
-      const ratings = await this.ratingService.findByBook(req.params.bookId);
+      const userId = req.user?.id; // Optional - works for both authenticated and public
+      const ratings = await this.ratingService.findByBook(req.params.bookId, userId);
       return ResponseUtil.success(res, ratings, "Ratings fetched successfully");
     } catch (error: any) {
       return ResponseUtil.error(res, error.message);

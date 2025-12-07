@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { BookDetailSkeleton } from "../components/SkeletonLoaders";
 import { RelatedBooks } from "../components/RelatedBooks";
+import RatingVoteButtons from "../components/RatingVoteButtons";
 import toast from "react-hot-toast";
 import { useState } from "react";
 import { AxiosError } from "axios";
@@ -25,11 +26,15 @@ interface BookRating {
   stars: number;
   content?: string;
   createdAt: string;
+  userId: string;
   user?: {
     fullName?: string;
     avatar?: string;
     username?: string;
   };
+  upvotes?: number;
+  downvotes?: number;
+  userVote?: 1 | -1 | null;
 }
 
 export default function BookDetail() {
@@ -502,9 +507,26 @@ export default function BookDetail() {
                       ))}
                     </div>
                     
-                    <p className="text-gray-600 text-sm leading-relaxed">
+                    <p className="text-gray-600 text-sm leading-relaxed mb-4">
                       {rating.content}
                     </p>
+
+                    {/* Vote Buttons */}
+                    <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                      <RatingVoteButtons
+                        ratingId={rating.id}
+                        initialUpvotes={rating.upvotes || 0}
+                        initialDownvotes={rating.downvotes || 0}
+                        initialUserVote={rating.userVote || null}
+                        disabled={!isAuthenticated || rating.userId === user?.id}
+                      />
+                      {!isAuthenticated && (
+                        <span className="text-xs text-gray-400">Sign in to vote</span>
+                      )}
+                      {isAuthenticated && rating.userId === user?.id && (
+                        <span className="text-xs text-gray-400">Can't vote on own review</span>
+                      )}
+                    </div>
                   </div>
                 ))
               ) : (
