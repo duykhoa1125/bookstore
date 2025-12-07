@@ -130,6 +130,11 @@ class ApiClient {
     return response.data;
   }
 
+  async getRelatedBooks(bookId: string, limit: number = 6): Promise<ApiResponse<Book[]>> {
+    const response = await this.client.get(`/books/${bookId}/related`, { params: { limit } });
+    return response.data;
+  }
+
   // Category endpoints
   async getCategories(): Promise<ApiResponse<Category[]>> {
     const response = await this.client.get("/categories");

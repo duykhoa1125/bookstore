@@ -9,6 +9,7 @@ const bookController = new BookController();
 
 router.get("/", bookController.findAll);
 router.get("/:id", bookController.findById);
+router.get("/:id/related", bookController.getRelatedBooks);
 router.post(
   "/",
   AuthMiddleware.authenticate,

@@ -15,6 +15,7 @@ import {
   RotateCcw
 } from "lucide-react";
 import { BookDetailSkeleton } from "../components/SkeletonLoaders";
+import { RelatedBooks } from "../components/RelatedBooks";
 import toast from "react-hot-toast";
 import { useState } from "react";
 import { AxiosError } from "axios";
@@ -518,6 +519,9 @@ export default function BookDetail() {
              </div>
           </div>
         </div>
+
+        {/* Related Books Section */}
+        <RelatedBooks bookId={id!} />
       </div>
     </div>
   );

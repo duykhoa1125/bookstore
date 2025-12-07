@@ -16,8 +16,11 @@ export function BookCard({ book, onAddToCart, isAddingToCart = false, onQuickVie
   const hasRating = averageRating > 0
 
   return (
-    <div className="group relative bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col h-full overflow-hidden border border-gray-100 hover:border-blue-100 transform hover:-translate-y-1">
-      <Link to={`/books/${book.id}`} className="block relative w-full pt-[125%] overflow-hidden bg-gray-100">
+    <Link 
+      to={`/books/${book.id}`} 
+      className="group relative bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col h-full overflow-hidden border border-gray-100 hover:border-blue-100 transform hover:-translate-y-1"
+    >
+      <div className="block relative w-full pt-[125%] overflow-hidden bg-gray-100">
         {book.imageUrl ? (
           <img
             src={book.imageUrl}
@@ -70,15 +73,13 @@ export function BookCard({ book, onAddToCart, isAddingToCart = false, onQuickVie
              Low Stock
            </div>
         )}
-      </Link>
+      </div>
 
       <div className="p-3 flex flex-col flex-grow">
         <div className="mb-1.5">
-           <Link to={`/books/${book.id}`}>
-            <h3 className="text-sm font-bold text-gray-900 leading-snug line-clamp-2 group-hover:text-blue-600 transition-colors" title={book.title}>
-              {book.title}
-            </h3>
-          </Link>
+          <h3 className="text-sm font-bold text-gray-900 leading-snug line-clamp-2 group-hover:text-blue-600 transition-colors" title={book.title}>
+            {book.title}
+          </h3>
           {book.authors && book.authors.length > 0 && (
             <p className="text-[11px] text-gray-500 mt-0.5 truncate">
               {book.authors.map(a => a.author.name).join(', ')}
@@ -119,7 +120,11 @@ export function BookCard({ book, onAddToCart, isAddingToCart = false, onQuickVie
           </div>
           
           <button
-            onClick={(e) => onAddToCart(e, book.id)}
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onAddToCart(e, book.id)
+            }}
             disabled={book.stock === 0 || isAddingToCart}
             className={`p-2 rounded-lg transition-all shadow-sm flex-shrink-0 ${
               book.stock === 0
@@ -132,6 +137,6 @@ export function BookCard({ book, onAddToCart, isAddingToCart = false, onQuickVie
           </button>
         </div>
       </div>
-    </div>
+    </Link>
   )
 }

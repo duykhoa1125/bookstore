@@ -218,4 +218,72 @@ export class BookService {
 
     return { message: "Book deleted successfully" };
   }
+
+  async getRelatedBooks(bookId: string, limit: number = 6) {
+    // Get the current book with its category and authors
+    const currentBook = await prisma.book.findUnique({
+      where: { id: bookId },
+      include: {
+        authors: { select: { authorId: true } },
+      },
+    });
+
+    if (!currentBook) {
+      throw new Error("Book not found");
+    }
+
+    const authorIds = currentBook.authors.map((a) => a.authorId);
+
+    // Find books that share the same category OR have at least one common author
+    const relatedBooks = await prisma.book.findMany({
+      where: {
+        id: { not: bookId }, // Exclude current book
+        OR: [
+          { categoryId: currentBook.categoryId },
+          {
+            authors: {
+              some: {
+                authorId: { in: authorIds },
+              },
+            },
+          },
+        ],
+      },
+      include: {
+        publisher: true,
+        category: true,
+        authors: { include: { author: true } },
+      },
+      take: limit,
+      orderBy: { createdAt: "desc" },
+    });
+
+    // Get average ratings for related books
+    const bookIds = relatedBooks.map((book) => book.id);
+    let ratingsMap = new Map<string, number>();
+
+    if (bookIds.length > 0) {
+      const ratingsData = await prisma.$queryRaw<
+        Array<{ bookId: string; averageRating: number }>
+      >`
+        SELECT "book_id" as "bookId",
+               AVG(stars)::float as "averageRating"
+        FROM "ratings"
+        WHERE "book_id" = ANY(${bookIds})
+        GROUP BY "book_id"
+      `;
+
+      ratingsMap = new Map(
+        ratingsData.map((r) => [r.bookId, r.averageRating])
+      );
+    }
+
+    // Attach averageRating to books
+    const booksWithRating = relatedBooks.map((book) => ({
+      ...book,
+      averageRating: ratingsMap.get(book.id) || 0,
+    }));
+
+    return booksWithRating;
+  }
 }

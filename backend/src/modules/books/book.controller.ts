@@ -55,4 +55,14 @@ export class BookController {
       return ResponseUtil.error(res, error.message);
     }
   };
+
+  getRelatedBooks = async (req: Request, res: Response) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 6;
+      const books = await this.bookService.getRelatedBooks(req.params.id, limit);
+      return ResponseUtil.success(res, books, "Related books fetched successfully");
+    } catch (error: any) {
+      return ResponseUtil.error(res, error.message, 404);
+    }
+  };
 }
