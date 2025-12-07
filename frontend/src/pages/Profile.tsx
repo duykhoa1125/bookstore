@@ -118,7 +118,7 @@ export default function Profile() {
     }
   }
 
-  const isOAuthAccount = !user.password && user.googleId
+  const isOAuthAccount = !!user.googleId
 
   return (
     <div className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8">

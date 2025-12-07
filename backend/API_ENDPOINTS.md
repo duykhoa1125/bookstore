@@ -4,6 +4,28 @@ Tài liệu mô tả tất cả các endpoints của Backend API.
 
 **Base URL:** `/api`
 
+**Phiên bản API:** 1.0.0
+
+## 📋 Tổng Quan
+
+API này cung cấp các endpoints để quản lý hệ thống bán sách trực tuyến, bao gồm:
+- **Xác thực & phân quyền**: Đăng ký, đăng nhập (JWT + Google OAuth), quên mật khẩu
+- **Quản lý sách**: CRUD sách, tìm kiếm, lọc, sách liên quan
+- **Giỏ hàng**: Thêm/sửa/xóa items, checkout có chọn lọc
+- **Đơn hàng**: Tạo đơn, theo dõi trạng thái, lịch sử mua hàng
+- **Thanh toán**: Xử lý thanh toán, phương thức thanh toán
+- **Đánh giá**: Rating & review sách
+- **Upload**: Upload ảnh (Cloudinary)
+- **Analytics**: Thống kê dành cho Admin (doanh thu, đơn hàng, khách hàng)
+
+**Công nghệ sử dụng:**
+- Express.js 5.x + TypeScript
+- Prisma ORM + PostgreSQL
+- JWT Authentication
+- Cloudinary (Image storage)
+- Resend (Email service)
+- Zod (Validation)
+
 ---
 
 ## 📋 Mục lục
@@ -201,11 +223,54 @@ Tài liệu mô tả tất cả các endpoints của Backend API.
 | ------ | -------- | ------------------------ | ---------- |
 | GET    | `/`      | Lấy danh sách tất cả sách | ❌         |
 | GET    | `/:id`   | Lấy thông tin chi tiết sách | ❌       |
+| GET    | `/:id/related` | Lấy sách liên quan | ❌       |
 | POST   | `/`      | Tạo sách mới             | ✅ Admin   |
 | PATCH  | `/:id`   | Cập nhật thông tin sách  | ✅ Admin   |
 | DELETE | `/:id`   | Xóa sách                 | ✅ Admin   |
 
 ### Request/Response Details
+
+#### GET `/` - Lấy danh sách sách
+
+**Query Parameters:** (tất cả đều tùy chọn)
+```
+search          : string   - Tìm kiếm theo tên sách
+categoryId      : string   - Lọc theo danh mục
+authorId        : string   - Lọc theo tác giả
+publisherId     : string   - Lọc theo nhà xuất bản
+minPrice        : number   - Giá tối thiểu
+maxPrice        : number   - Giá tối đa
+inStock         : boolean  - Chỉ hiển thị sách còn hàng
+sortBy          : string   - Sắp xếp (price, title, createdAt)
+sortOrder       : string   - Thứ tự (asc, desc)
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "string",
+      "title": "string",
+      "price": number,
+      "stock": number,
+      "imageUrl": "string",
+      "description": "string",
+      "category": { ... },
+      "publisher": { ... },
+      "authors": [ ... ],
+      "ratings": [ ... ]
+    }
+  ]
+}
+```
+
+#### GET `/:id/related` - Lấy sách liên quan
+
+Trả về danh sách sách có cùng category hoặc authors với sách hiện tại.
+
+**Response:** Giống như GET `/`
 
 #### POST `/` - Tạo sách mới
 
@@ -802,3 +867,137 @@ Authorization: Bearer <token>
 | 403  | Forbidden - Không có quyền   |
 | 404  | Not Found - Không tìm thấy   |
 | 500  | Internal Server Error        |
+
+---
+
+## 💡 Best Practices
+
+### 1. Error Handling
+Luôn kiểm tra `success` field trong response trước khi sử dụng dữ liệu:
+
+```javascript
+try {
+  const response = await api.get('/api/books');
+  if (response.data.success) {
+    // Xử lý data thành công
+    const books = response.data.data;
+  }
+} catch (error) {
+  // Xử lý lỗi
+  console.error(error.response.data.error);
+}
+```
+
+### 2. Token Management
+- Lưu JWT token an toàn (localStorage hoặc httpOnly cookie)
+- Refresh token trước khi hết hạn
+- Xóa token khi logout
+
+### 3. Validation
+- Validate dữ liệu ở cả client và server
+- Hiển thị lỗi validation rõ ràng cho người dùng
+- Sử dụng Zod schemas để đảm bảo type safety
+
+### 4. Rate Limiting
+- Implement debounce cho search inputs
+- Cache dữ liệu khi có thể (React Query)
+- Batch requests nếu cần thiều nhiều API calls
+
+---
+
+## 📚 Ví Dụ Sử Dụng
+
+### Đăng nhập & Sử dụng Token
+
+```javascript
+// 1. Login
+const loginResponse = await fetch('http://localhost:3000/api/auth/login', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    email: 'user@example.com',
+    password: 'password123'
+  })
+});
+
+const { data } = await loginResponse.json();
+const token = data.token;
+
+// 2. Sử dụng token cho các requests sau
+const booksResponse = await fetch('http://localhost:3000/api/books', {
+  headers: {
+    'Authorization': `Bearer ${token}`
+  }
+});
+```
+
+### Tìm kiếm & Lọc Sách
+
+```javascript
+// Tìm kiếm sách với filters
+const params = new URLSearchParams({
+  search: 'Harry Potter',
+  categoryId: 'fiction-id',
+  minPrice: '100000',
+  maxPrice: '500000',
+  sortBy: 'price',
+  sortOrder: 'asc'
+});
+
+const response = await fetch(`http://localhost:3000/api/books?${params}`);
+const books = await response.json();
+```
+
+### Upload Ảnh
+
+```javascript
+// Upload avatar
+const formData = new FormData();
+formData.append('avatar', fileInput.files[0]);
+
+const response = await fetch('http://localhost:3000/api/upload/avatar', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${token}`
+  },
+  body: formData
+});
+```
+
+### Checkout với Selected Items
+
+```javascript
+// Tạo đơn hàng chỉ với các items đã chọn
+const orderResponse = await fetch('http://localhost:3000/api/orders', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    shippingAddress: '123 Main St, City, Country',
+    paymentMethodId: 'payment-method-id',
+    cartItemIds: ['item-id-1', 'item-id-2'] // Chỉ checkout các items này
+  })
+});
+```
+
+---
+
+## 🔗 Liên Kết Hữu Ích
+
+- **Frontend Repository**: [Link to frontend repo]
+- **Prisma Schema**: `backend/prisma/schema.prisma`
+- **Postman Collection**: [Link nếu có]
+- **Swagger/OpenAPI**: [Link nếu có]
+
+---
+
+## 📞 Hỗ Trợ
+
+Nếu có vấn đề hoặc câu hỏi về API, vui lòng:
+1. Kiểm tra logs trong console
+2. Đảm bảo database migrations đã chạy
+3. Verify environment variables đã được cấu hình đúng
+4. Tạo issue trên GitHub repository
+

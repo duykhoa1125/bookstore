@@ -1,4 +1,4 @@
-import { BookOpen, Users, Award, Sparkles, Heart, Package, Leaf, Star, Globe } from 'lucide-react'
+import { BookOpen, Users, Award, Sparkles, Heart, Leaf, Star, Globe } from 'lucide-react'
 import { AnimatedText } from '../components/about/AnimatedText'
 import { ScrollReveal } from '../components/about/ScrollReveal'
 import { TiltCard } from '../components/about/TiltCard'

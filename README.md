@@ -17,12 +17,12 @@
 ## ✨ Tính Năng Chính
 
 ### 👤 Dành cho Người Dùng
-- **🔐 Xác thực**: Đăng ký, đăng nhập, đăng nhập bằng Google OAuth 2.0
+- **🔐 Xác thực**: Đăng ký, đăng nhập, đăng nhập bằng Google OAuth 2.0, quên mật khẩu & đặt lại mật khẩu
 - **📖 Duyệt sách**: Tìm kiếm, lọc theo danh mục, tác giả, nhà xuất bản, khoảng giá
-- **🛒 Giỏ hàng**: Thêm/xóa sách, cập nhật số lượng
-- **📦 Đặt hàng**: Thanh toán, theo dõi đơn hàng
+- **🛒 Giỏ hàng**: Thêm/xóa sách, cập nhật số lượng, chọn item để checkout
+- **📦 Đặt hàng**: Thanh toán, theo dõi đơn hàng, xem chi tiết đơn hàng
 - **⭐ Đánh giá**: Đánh giá và bình luận sách
-- **👤 Hồ sơ**: Quản lý thông tin cá nhân, upload avatar
+- **👤 Hồ sơ**: Quản lý thông tin cá nhân, upload avatar, đổi mật khẩu
 
 ### 🛠️ Dành cho Quản Trị Viên
 - **📊 Dashboard**: Thống kê doanh thu, đơn hàng, người dùng
@@ -87,8 +87,11 @@ bookstore/
 | **PostgreSQL** | Latest | Cơ sở dữ liệu |
 | **JWT** | - | Xác thực token |
 | **Cloudinary** | - | Cloud storage cho hình ảnh |
+| **Resend** | - | Email service |
 | **Zod** | 4.x | Validation schema |
 | **bcryptjs** | - | Mã hóa mật khẩu |
+| **Google Auth Library** | - | Google OAuth 2.0 |
+| **Helmet** | - | Security middleware |
 
 ### Frontend
 | Công nghệ | Phiên bản | Mô tả |
@@ -98,10 +101,12 @@ bookstore/
 | **Vite** | 5.x | Build tool |
 | **React Query** | 5.x | Server state management |
 | **React Router** | 6.x | Client-side routing |
-| **Tailwind CSS** | 3.x | Utility-first CSS |
+| **Vanilla CSS** | - | Custom CSS styling |
 | **Axios** | - | HTTP client |
 | **Lucide React** | - | Icon library |
 | **Recharts** | 3.x | Chart library |
+| **React Hot Toast** | - | Toast notifications |
+| **Google OAuth** | - | Google authentication |
 
 ---
 
@@ -202,6 +207,7 @@ NODE_ENV=development
 
 # CORS - Frontend URLs (comma-separated)
 CORS_ALLOWED_ORIGINS="http://localhost:5173,http://localhost:3001"
+FRONTEND_URL="http://localhost:5173"
 
 # Cloudinary (optional - for image uploads)
 CLOUDINARY_CLOUD_NAME="your-cloud-name"
@@ -210,6 +216,10 @@ CLOUDINARY_API_SECRET="your-api-secret"
 
 # Google OAuth (optional)
 GOOGLE_CLIENT_ID="your-google-client-id"
+
+# Resend Email Service (optional - for password reset emails)
+RESEND_API_KEY="your-resend-api-key"
+RESEND_FROM_EMAIL="Bookstore <onboarding@resend.dev>"
 ```
 
 ```bash
@@ -278,22 +288,35 @@ Chi tiết về các endpoints API có thể xem tại file: [`backend/API_ENDPO
 
 ---
 
-## 📱 Screenshots
+## 📱 Tính Năng Giao Diện
 
-### Trang Chủ
-Giao diện trang chủ với thiết kế hiện đại, hỗ trợ hiệu ứng parallax và micro-animations.
+### 🎨 Thiết Kế Hiện Đại & Responsive
+- **Neo-Minimalist UI**: Giao diện tối giản, hiện đại với màu sắc tinh tế
+- **Responsive Design**: Tối ưu cho mọi kích thước màn hình (desktop, tablet, mobile)
+- **Dark Mode Support**: Hỗ trợ chế độ tối/sáng
+- **Smooth Animations**: Hiệu ứng chuyển động mượt mà với micro-interactions
+- **Loading Skeletons**: Skeleton screens chi tiết cho tất cả các trang
 
-### Danh Sách Sách
-Lọc sách theo danh mục, tác giả, giá với giao diện accordion hiện đại.
-
-### Chi Tiết Sách
-Xem thông tin chi tiết sách, đánh giá của người dùng khác.
-
-### Giỏ Hàng & Thanh Toán
-Quy trình thanh toán đơn giản, rõ ràng.
-
-### Admin Dashboard
-Bảng điều khiển quản trị với biểu đồ thống kê trực quan.
+### ✨ Trải Nghiệm Người Dùng
+- **Trang Chủ**: Hero section với parallax effects, featured books carousel
+- **Danh Sách Sách**: 
+  - Book cards với 3D tilt effects
+  - Badges "New" và "Low Stock"
+  - Quick view modal và add to cart nhanh
+  - Filter sidebar hiện đại với accordion sections
+- **Chi Tiết Sách**: 
+  - Gallery ảnh, thông tin chi tiết
+  - Hệ thống đánh giá và review với rating filters
+  - Related books suggestions
+- **Giỏ Hàng & Thanh Toán**: 
+  - Chọn items cụ thể để checkout
+  - Confirmation modal trước khi đặt hàng
+  - Order summary rõ ràng với breakdown chi phí
+- **Admin Dashboard**: 
+  - Charts và biểu đồ thống kê với Recharts
+  - Custom modals cho create/edit/delete
+  - Data tables với sorting và filtering
+  - Toast notifications cho mọi hành động
 
 ---
 
