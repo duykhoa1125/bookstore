@@ -595,7 +595,7 @@ export default function AdminDashboardOverview() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Orders */}
         <div className="lg:col-span-2 bg-white/70 backdrop-blur-xl rounded-3xl border border-white/60 shadow-lg shadow-gray-200/50 overflow-hidden">
-          <div className="px-8 py-6 border-b border-gray-100/50 flex justify-between items-center">
+          <div className="px-6 py-5 border-b border-gray-100/50 flex justify-between items-center">
             <h2 className="text-xl font-bold text-gray-900">Recent Orders</h2>
             <Link 
               to="/admin/orders"
@@ -605,47 +605,47 @@ export default function AdminDashboardOverview() {
             </Link>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[500px]">
               <thead className="bg-gray-50/50 border-b border-gray-100/50">
                 <tr>
-                  <th className="px-8 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Order ID</th>
-                  <th className="px-8 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Customer</th>
-                  <th className="px-8 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
-                  <th className="px-8 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-8 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Total</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Order</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Customer</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider hidden sm:table-cell">Date</th>
+                  <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Total</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100/50 bg-white/30">
                 {recentOrders.length > 0 ? (
                   recentOrders.map((order: any) => (
                     <tr key={order.id} className="hover:bg-blue-50/30 transition-colors">
-                      <td className="px-8 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
+                      <td className="px-4 py-3 whitespace-nowrap text-sm font-bold text-gray-900">
                         #{order.id.substring(0, 8)}
                       </td>
-                      <td className="px-8 py-4 whitespace-nowrap text-sm text-gray-600">
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
                         <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-600">
+                          <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-600 flex-shrink-0">
                             {order.user?.fullName?.charAt(0) || '?'}
                           </div>
-                          {order.user?.fullName || 'N/A'}
+                          <span className="truncate max-w-[100px]">{order.user?.fullName || 'N/A'}</span>
                         </div>
                       </td>
-                      <td className="px-8 py-4 whitespace-nowrap text-sm text-gray-500 font-medium">
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 font-medium hidden sm:table-cell">
                         {new Date(order.orderDate).toLocaleDateString()}
                       </td>
-                      <td className="px-8 py-4 whitespace-nowrap">
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold shadow-sm ${getStatusColor(order.status)}`}>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold shadow-sm ${getStatusColor(order.status)}`}>
                           {order.status}
                         </span>
                       </td>
-                      <td className="px-8 py-4 whitespace-nowrap text-sm font-bold text-gray-900 text-right">
+                      <td className="px-4 py-3 whitespace-nowrap text-sm font-bold text-gray-900 text-right">
                         ${order.total.toFixed(2)}
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center text-sm text-gray-500">
+                    <td colSpan={5} className="px-4 py-10 text-center text-sm text-gray-500">
                       No orders found
                     </td>
                   </tr>
