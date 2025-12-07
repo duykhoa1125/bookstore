@@ -1,8 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
-import { Trash2, Plus, Minus, ShoppingBag, CreditCard, MapPin, Truck, ArrowRight, ShieldCheck, User, Edit, Check } from 'lucide-react'
+import { Trash2, Plus, Minus, ShoppingBag, CreditCard, MapPin, Truck, ArrowRight, ShieldCheck, User, Edit, Check, Wallet, Banknote } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { CartSkeleton } from '../components/SkeletonLoaders'
+import PaymentConfirmationModal from '../components/PaymentConfirmationModal'
 import toast from 'react-hot-toast'
 import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
@@ -16,6 +17,7 @@ export default function Cart() {
   const [pendingUpdates, setPendingUpdates] = useState(0)
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
   const [isEditingAddress, setIsEditingAddress] = useState(false)
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false)
 
   const { data: cartData, isLoading } = useQuery({
     queryKey: ['cart'],
@@ -117,11 +119,22 @@ export default function Cart() {
       const errorMessage = error.response?.data?.message || 'Failed to create order'
       const errorDetails = error.response?.data?.errors
       
-      if (errorDetails) {
+      // Handle specific error cases with better messages
+      if (errorMessage.toLowerCase().includes('insufficient stock')) {
+        toast.error('❌ Some items are out of stock. Please check your cart and try again.')
+      } else if (errorMessage.toLowerCase().includes('cart is empty')) {
+        toast.error('🛒 Your cart is empty. Please add items before checkout.')
+      } else if (errorMessage.toLowerCase().includes('address')) {
+        toast.error('📍 Please provide a valid shipping address (minimum 10 characters).')
+      } else if (errorMessage.toLowerCase().includes('payment method')) {
+        toast.error('💳 Please select a payment method.')
+      } else if (errorDetails) {
+        // Show detailed validation errors
         const errorMessages = Object.values(errorDetails).flat()
-        errorMessages.forEach((msg: any) => toast.error(msg))
+        errorMessages.forEach((msg: any) => toast.error(`⚠️ ${msg}`))
       } else {
-        toast.error(errorMessage)
+        // Generic error with suggestion
+        toast.error(`${errorMessage}. Please try again or contact support if the issue persists.`)
       }
     },
   })
@@ -211,6 +224,11 @@ export default function Cart() {
       return
     }
 
+    // Show confirmation modal instead of directly submitting
+    setShowConfirmationModal(true)
+  }
+
+  const confirmOrder = async () => {
     // Send only selected cart item IDs
     const selectedCartItemIds = Array.from(selectedItems)
 
@@ -349,18 +367,24 @@ export default function Cart() {
         <div className="lg:col-span-1">
           <div className="bg-white rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 sticky top-24">
             <h2 className="text-2xl font-bold mb-6 text-gray-900">Order Summary</h2>
-            <div className="space-y-2 mb-4">
-              <div className="flex justify-between text-gray-600">
-                <span>Selected Items:</span>
-                <span className="font-semibold text-blue-600">{selectedItems.size}</span>
+            <div className="space-y-3 mb-6">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Selected Items:</span>
+                <span className="font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-lg">{selectedItems.size}</span>
               </div>
-              <div className="flex justify-between">
-                <span>Subtotal:</span>
-                <span>${selectedTotal.toFixed(2)}</span>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Subtotal:</span>
+                <span className="font-semibold text-gray-900">${selectedTotal.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between font-bold text-lg pt-2 border-t">
-                <span>Total:</span>
-                <span>${selectedTotal.toFixed(2)}</span>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Shipping:</span>
+                <span className="font-semibold text-green-600">Free</span>
+              </div>
+              <div className="border-t border-gray-200 pt-3 mt-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-xl font-bold text-gray-900">Total:</span>
+                  <span className="text-2xl font-bold text-blue-600">${selectedTotal.toFixed(2)}</span>
+                </div>
               </div>
             </div>
 
@@ -458,15 +482,25 @@ export default function Cart() {
                            )}
                         </div>
                         
-                        <span className={`font-semibold text-sm ${selectedPaymentMethod === method.id ? 'text-blue-900' : 'text-gray-700'}`}>
-                          {method.name}
-                        </span>
+                        <div className="flex-1 flex items-center gap-3">
+                          <span className={`font-semibold text-sm ${selectedPaymentMethod === method.id ? 'text-blue-900' : 'text-gray-700'}`}>
+                            {method.name}
+                          </span>
+                        </div>
                         
-                        <div className="ml-auto opacity-50 group-hover:opacity-100 transition-opacity">
+                        <div className={`p-2 rounded-xl transition-all ${
+                          selectedPaymentMethod === method.id 
+                            ? 'bg-blue-100' 
+                            : 'bg-gray-50 group-hover:bg-gray-100'
+                        }`}>
                            {method.name.toLowerCase().includes('cash') || method.name.toLowerCase().includes('cod') ? (
-                              <ShieldCheck className="w-5 h-5 text-green-600" />
+                              <Banknote className={`w-5 h-5 ${selectedPaymentMethod === method.id ? 'text-green-600' : 'text-green-500'}`} />
+                           ) : method.name.toLowerCase().includes('wallet') || method.name.toLowerCase().includes('momo') || method.name.toLowerCase().includes('zalo') ? (
+                              <Wallet className={`w-5 h-5 ${selectedPaymentMethod === method.id ? 'text-purple-600' : 'text-purple-500'}`} />
+                           ) : method.name.toLowerCase().includes('bank') || method.name.toLowerCase().includes('transfer') ? (
+                              <ShieldCheck className={`w-5 h-5 ${selectedPaymentMethod === method.id ? 'text-blue-600' : 'text-blue-500'}`} />
                            ) : (
-                              <CreditCard className="w-5 h-5 text-blue-600" />
+                              <CreditCard className={`w-5 h-5 ${selectedPaymentMethod === method.id ? 'text-indigo-600' : 'text-indigo-500'}`} />
                            )}
                         </div>
                       </label>
@@ -507,6 +541,21 @@ export default function Cart() {
           </div>
         </div>
       </div>
+
+      {/* Payment Confirmation Modal */}
+      <PaymentConfirmationModal
+        isOpen={showConfirmationModal}
+        onClose={() => setShowConfirmationModal(false)}
+        onConfirm={() => {
+          confirmOrder()
+          setShowConfirmationModal(false)
+        }}
+        selectedItems={cart.items.filter((item: any) => selectedItems.has(item.id))}
+        shippingAddress={shippingAddress}
+        paymentMethodName={paymentMethods.find((m: any) => m.id === selectedPaymentMethod)?.name || ''}
+        total={selectedTotal}
+        isProcessing={createOrderMutation.isPending}
+      />
     </div>
   )
 }

@@ -215,33 +215,70 @@ export default function OrderDetail() {
               </div>
 
               {order.payment?.status === 'PENDING' && order.status !== 'CANCELLED' && (
-                <div className="pt-6 mt-2 border-t border-gray-100">
-                  <button
-                    onClick={handlePayment}
-                    disabled={processPaymentMutation.isPending}
-                    className="w-full group relative overflow-hidden bg-gray-900 text-white px-6 py-4 rounded-2xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:-translate-y-0.5"
-                  >
-                     <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                     <span className="relative z-10 flex items-center justify-center gap-2">
-                        {processPaymentMutation.isPending ? (
-                          <>
-                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            Processing...
-                          </>
-                        ) : (
-                          <>
-                            Pay Now
-                            <span className="bg-white/20 px-2 py-0.5 rounded text-sm">${order.total.toFixed(2)}</span>
-                            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                          </>
-                        )}
-                     </span>
-                  </button>
-                  <div className="flex items-center justify-center gap-2 mt-3 text-xs text-gray-400 font-medium">
-                     <ShieldCheck className="w-3 h-3" />
-                     Secure encrypted payment
+                <>
+                  {/* Payment Instructions */}
+                  <div className="pt-4 mt-4 border-t border-gray-100">
+                    <div className={`p-4 rounded-2xl border-2 ${
+                      order.payment.paymentMethod?.name.toLowerCase().includes('cash') || 
+                      order.payment.paymentMethod?.name.toLowerCase().includes('cod')
+                        ? 'bg-green-50 border-green-200'
+                        : order.payment.paymentMethod?.name.toLowerCase().includes('bank') ||
+                          order.payment.paymentMethod?.name.toLowerCase().includes('transfer')
+                        ? 'bg-blue-50 border-blue-200'
+                        : 'bg-purple-50 border-purple-200'
+                    }`}>
+                      <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-2">Payment Instructions</p>
+                      {order.payment.paymentMethod?.name.toLowerCase().includes('cash') || 
+                       order.payment.paymentMethod?.name.toLowerCase().includes('cod') ? (
+                        <p className="text-sm text-gray-700 leading-relaxed">
+                          💵 <strong>Cash on Delivery:</strong> Your order will be delivered to your address. Please prepare <strong>${order.total.toFixed(2)}</strong> in cash for payment upon delivery.
+                        </p>
+                      ) : order.payment.paymentMethod?.name.toLowerCase().includes('bank') ||
+                        order.payment.paymentMethod?.name.toLowerCase().includes('transfer') ? (
+                        <div className="text-sm text-gray-700 space-y-2">
+                          <p>🏦 <strong>Bank Transfer:</strong> Please complete your payment via bank transfer.</p>
+                          <div className="bg-white/60 p-3 rounded-lg mt-2 font-mono text-xs">
+                            <p className="mb-1"><strong>Amount:</strong> ${order.total.toFixed(2)}</p>
+                            <p className="text-gray-500">Your order will be processed after payment confirmation.</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-700 leading-relaxed">
+                          💳 <strong>Online Payment:</strong> Complete your payment by clicking the "Pay Now" button below. Amount: <strong>${order.total.toFixed(2)}</strong>
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
+
+                  {/* Pay Button */}
+                  <div className="pt-4">
+                    <button
+                      onClick={handlePayment}
+                      disabled={processPaymentMutation.isPending}
+                      className="w-full group relative overflow-hidden bg-gray-900 text-white px-6 py-4 rounded-2xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+                    >
+                       <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                       <span className="relative z-10 flex items-center justify-center gap-2">
+                          {processPaymentMutation.isPending ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                              Processing...
+                            </>
+                          ) : (
+                            <>
+                              Pay Now
+                              <span className="bg-white/20 px-2 py-0.5 rounded text-sm">${order.total.toFixed(2)}</span>
+                              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                            </>
+                          )}
+                       </span>
+                    </button>
+                    <div className="flex items-center justify-center gap-2 mt-3 text-xs text-gray-400 font-medium">
+                       <ShieldCheck className="w-3 h-3" />
+                       Secure encrypted payment
+                    </div>
+                  </div>
+                </>
               )}
             </div>
           </div>

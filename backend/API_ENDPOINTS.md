@@ -53,8 +53,11 @@ Tài liệu mô tả tất cả các endpoints của Backend API.
 | POST   | `/register` | Đăng ký tài khoản mới   | ❌    |
 | POST   | `/login`    | Đăng nhập              | ❌    |
 | POST   | `/google`   | Đăng nhập bằng Google OAuth | ❌ |
+| POST   | `/forgot-password` | Gửi email khôi phục mật khẩu | ❌ |
+| POST   | `/reset-password` | Đặt lại mật khẩu với token | ❌ |
 | GET    | `/profile`  | Lấy thông tin profile   | ✅ User |
 | PUT    | `/profile`  | Cập nhật thông tin profile | ✅ User |
+| PUT    | `/change-password` | Thay đổi mật khẩu | ✅ User |
 
 ### Request/Response Details
 
@@ -116,6 +119,45 @@ Tài liệu mô tả tất cả các endpoints của Backend API.
 
 > 💡 **Lưu ý:** Nếu user chưa tồn tại, hệ thống sẽ tự động tạo tài khoản mới dựa trên thông tin từ Google.
 
+#### POST `/forgot-password` - Quên mật khẩu
+
+**Request Body:**
+```json
+{
+  "email": "string (email hợp lệ, bắt buộc)"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {},
+  "message": "Password reset email sent"
+}
+```
+
+> 💡 **Lưu ý:** Email chứa link reset password sẽ được gửi đến địa chỉ email của user. Token có hiệu lực trong 1 giờ.
+
+#### POST `/reset-password` - Đặt lại mật khẩu
+
+**Request Body:**
+```json
+{
+  "token": "string (token từ email, bắt buộc)",
+  "password": "string (tối thiểu 6 ký tự, bắt buộc)"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {},
+  "message": "Password reset successfully"
+}
+```
+
 #### PUT `/profile` - Cập nhật Profile
 
 **Request Body:**
@@ -125,6 +167,25 @@ Tài liệu mô tả tất cả các endpoints của Backend API.
   "phone": "string (8-15 số, tùy chọn)",
   "address": "string (tùy chọn)",
   "position": "string (tùy chọn)"
+}
+```
+
+#### PUT `/change-password` - Thay đổi mật khẩu
+
+**Request Body:**
+```json
+{
+  "currentPassword": "string (mật khẩu hiện tại, bắt buộc)",
+  "newPassword": "string (tối thiểu 6 ký tự, bắt buộc)"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {},
+  "message": "Password changed successfully"
 }
 ```
 
@@ -335,9 +396,12 @@ Tài liệu mô tả tất cả các endpoints của Backend API.
 ```json
 {
   "shippingAddress": "string (tối thiểu 10 ký tự, bắt buộc)",
-  "paymentMethodId": "string (bắt buộc)"
+  "paymentMethodId": "string (bắt buộc)",
+  "cartItemIds": ["string"] (mảng ID các item trong giỏ hàng, tùy chọn)
 }
 ```
+
+> 💡 **Lưu ý:** Nếu `cartItemIds` được cung cấp, chỉ các item được chọn sẽ được tạo thành đơn hàng. Nếu không, toàn bộ giỏ hàng sẽ được checkout.
 
 #### PATCH `/:id/status` - Cập nhật trạng thái
 
