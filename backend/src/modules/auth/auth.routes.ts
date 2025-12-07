@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { AuthController } from "./auth.controller";
 import { ValidationMiddleware } from "../../middleware/validation.middleware";
-import { LoginDto, RegisterDto, UpdateUserDto, ForgotPasswordDto, ResetPasswordDto } from "./auth.dto";
+import { LoginDto, RegisterDto, UpdateUserDto, ForgotPasswordDto, ResetPasswordDto, ChangePasswordDto } from "./auth.dto";
 import { AuthMiddleware } from "../../middleware/auth.middleware";
 import { GoogleAuthDto } from "./google-auth.dto";
 
@@ -47,6 +47,14 @@ router.put(
   AuthMiddleware.authenticate,
   ValidationMiddleware.validate(UpdateUserDto),
   authController.updateProfile
+);
+
+// Change password route
+router.put(
+  "/change-password",
+  AuthMiddleware.authenticate,
+  ValidationMiddleware.validate(ChangePasswordDto),
+  authController.changePassword
 );
 
 export default router;

@@ -123,6 +123,11 @@ class ApiClient {
     return response.data;
   }
 
+  async changePassword(currentPassword: string, newPassword: string): Promise<ApiResponse<{ message: string }>> {
+    const response = await this.client.put("/auth/change-password", { currentPassword, newPassword });
+    return response.data;
+  }
+
   // Book endpoints
   async getBooks(params?: {
     categoryId?: string;

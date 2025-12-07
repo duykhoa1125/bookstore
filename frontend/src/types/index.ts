@@ -178,4 +178,5 @@ export interface UpdateCartItemInput {
 export interface CreateOrderInput {
   shippingAddress: string;
   paymentMethodId: string;
+  cartItemIds?: string[]; // Optional: only checkout selected items
 }

@@ -13,13 +13,26 @@ export class OrderService {
         throw new Error("Cart is empty");
       }
 
-      for (const item of cart.items) {
+      // Filter items by cartItemIds if provided (selective checkout)
+      let itemsToCheckout = cart.items;
+      if (data.cartItemIds && data.cartItemIds.length > 0) {
+        itemsToCheckout = cart.items.filter(item =>
+          data.cartItemIds!.includes(item.id)
+        );
+
+        if (itemsToCheckout.length === 0) {
+          throw new Error("No valid items selected for checkout");
+        }
+      }
+
+      // Check stock for selected items only
+      for (const item of itemsToCheckout) {
         if (item.book.stock < item.quantity) {
           throw new Error(`Insufficient stock for ${item.book.title}`);
         }
       }
 
-      const total = cart.items.reduce(
+      const total = itemsToCheckout.reduce(
         (sum, item) => sum + item.book.price * item.quantity,
         0
       );
@@ -30,7 +43,7 @@ export class OrderService {
           shippingAddress: data.shippingAddress,
           total,
           items: {
-            create: cart.items.map((item) => ({
+            create: itemsToCheckout.map((item) => ({
               bookId: item.bookId,
               quantity: item.quantity,
               price: item.book.price,
@@ -49,7 +62,8 @@ export class OrderService {
         },
       });
 
-      for (const item of cart.items) {
+      // Decrement stock for selected items only
+      for (const item of itemsToCheckout) {
         const result = await tx.book.updateMany({
           where: {
             id: item.bookId,
@@ -63,10 +77,28 @@ export class OrderService {
         }
       }
 
-      await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
+      // Only delete selected items from cart
+      const itemIdsToDelete = itemsToCheckout.map(item => item.id);
+      await tx.cartItem.deleteMany({
+        where: {
+          id: { in: itemIdsToDelete }
+        }
+      });
+
+      // Recalculate cart total with remaining items
+      const remainingItems = await tx.cartItem.findMany({
+        where: { cartId: cart.id },
+        include: { book: true },
+      });
+
+      const newCartTotal = remainingItems.reduce(
+        (sum, item) => sum + item.book.price * item.quantity,
+        0
+      );
+
       await tx.cart.update({
         where: { id: cart.id },
-        data: { total: 0 },
+        data: { total: newCartTotal },
       });
 
       return order;

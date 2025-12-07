@@ -297,4 +297,37 @@ export class AuthService {
 
     return { message: "Password reset successfully" };
   }
+
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    // Get user with password
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Check if user has password (OAuth users can't change password)
+    if (!user.password) {
+      throw new Error("Cannot change password for OAuth accounts");
+    }
+
+    // Verify current password
+    const isPasswordValid = await PasswordUtil.compare(currentPassword, user.password);
+    if (!isPasswordValid) {
+      throw new Error("Current password is incorrect");
+    }
+
+    // Hash new password
+    const hashedPassword = await PasswordUtil.hash(newPassword);
+
+    // Update password
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+
+    return { message: "Password changed successfully" };
+  }
 }

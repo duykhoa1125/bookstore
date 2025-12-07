@@ -79,4 +79,18 @@ export class AuthController {
       return ResponseUtil.error(res, error.message, 400);
     }
   };
+
+  changePassword = async (req: Request, res: Response) => {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      const result = await this.authService.changePassword(
+        req.user!.id,
+        currentPassword,
+        newPassword
+      );
+      return ResponseUtil.success(res, result, result.message);
+    } catch (error: any) {
+      return ResponseUtil.error(res, error.message, 400);
+    }
+  };
 }

@@ -3,6 +3,7 @@ import { z } from "zod";
 export const CreateOrderDto = z.object({
   shippingAddress: z.string().min(10),
   paymentMethodId: z.string(),
+  cartItemIds: z.array(z.string()).optional(), // Optional: only checkout selected items
 });
 
 // Single DTO for order status updates (used by both regular status updates and admin confirmation)
