@@ -1,5 +1,5 @@
 import { PrismaClient, Role, OrderStatus, PaymentStatus } from '@prisma/client';
-import { fakerVI as faker } from '@faker-js/faker'; // Sử dụng locale tiếng Việt
+import { faker } from '@faker-js/faker'; // Using English locale
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -8,27 +8,27 @@ const prisma = new PrismaClient();
 const SEED_PASSWORD = 'password123';
 let hashedPassword: string;
 
-// CẤU HÌNH SỐ LƯỢNG DỮ LIỆU MUỐN TẠO
+// DATA CONFIGURATION
 const CONFIG = {
-    NUM_USERS: 100,         // Số lượng user thường
-    NUM_AUTHORS: 50,        // Số lượng tác giả
-    NUM_PUBLISHERS: 20,     // Số lượng nhà xuất bản
-    NUM_CATEGORIES: 15,     // Số danh mục cha
-    NUM_BOOKS: 500,         // Số lượng sách
-    NUM_ORDERS: 1000,       // Số lượng đơn hàng
-    MAX_ITEMS_PER_ORDER: 5, // Tối đa sách trong 1 đơn
-    NUM_RATINGS: 2000,      // Số lượng đánh giá
+    NUM_USERS: 100,         // Number of regular users
+    NUM_AUTHORS: 50,        // Number of authors
+    NUM_PUBLISHERS: 20,     // Number of publishers
+    NUM_CATEGORIES: 15,     // Number of parent categories
+    NUM_BOOKS: 500,         // Number of books
+    NUM_ORDERS: 1000,       // Number of orders
+    MAX_ITEMS_PER_ORDER: 5, // Max books per order
+    NUM_RATINGS: 2000,      // Number of ratings
 };
 
 async function main() {
-    console.log('🌱 Bắt đầu quá trình Seeding dữ liệu...');
+    console.log('🌱 Starting database seeding...');
 
     // Hash password một lần để dùng cho tất cả users
     hashedPassword = await bcrypt.hash(SEED_PASSWORD, 10);
 
-    // 1. XÓA DỮ LIỆU CŨ (Clean up)
-    // Thứ tự xóa quan trọng để tránh lỗi khóa ngoại
-    console.log('🗑️ Đang dọn dẹp dữ liệu cũ...');
+    // 1. CLEAN UP OLD DATA
+    // Order matters to avoid foreign key errors
+    console.log('🗑️ Cleaning up old data...');
     await prisma.ratingVote.deleteMany();
     await prisma.rating.deleteMany();
     await prisma.payment.deleteMany();
@@ -45,17 +45,17 @@ async function main() {
     await prisma.user.deleteMany();
     await prisma.paymentMethod.deleteMany();
 
-    // 2. TẠO PAYMENT METHODS (Dữ liệu tĩnh)
-    console.log('💳 Tạo phương thức thanh toán...');
+    // 2. CREATE PAYMENT METHODS (Static data)
+    console.log('💳 Creating payment methods...');
     const paymentMethods = await Promise.all([
-        prisma.paymentMethod.create({ data: { name: 'COD (Thanh toán khi nhận hàng)' } }),
-        prisma.paymentMethod.create({ data: { name: 'VNPAY' } }),
-        prisma.paymentMethod.create({ data: { name: 'MOMO' } }),
-        prisma.paymentMethod.create({ data: { name: 'Thẻ tín dụng quốc tế' } }),
+        prisma.paymentMethod.create({ data: { name: 'COD (Cash on Delivery)' } }),
+        prisma.paymentMethod.create({ data: { name: 'PayPal' } }),
+        prisma.paymentMethod.create({ data: { name: 'Stripe' } }),
+        prisma.paymentMethod.create({ data: { name: 'Credit Card' } }),
     ]);
 
-    // 3. TẠO PUBLISHERS & AUTHORS
-    console.log('📚 Tạo Nhà xuất bản và Tác giả...');
+    // 3. CREATE PUBLISHERS & AUTHORS
+    console.log('📚 Creating Publishers and Authors...');
     await prisma.publisher.createMany({
         data: Array.from({ length: CONFIG.NUM_PUBLISHERS }).map((_, i) => ({
             name: faker.company.name() + ` Books ${i + 1}`,
@@ -70,8 +70,8 @@ async function main() {
     });
     const authors = await prisma.author.findMany();
 
-    // 4. TẠO CATEGORIES (Cha và Con)
-    console.log('🗂️ Tạo Danh mục...');
+    // 4. CREATE CATEGORIES (Parent and Child)
+    console.log('🗂️ Creating Categories...');
     const categories: any[] = [];
 
     // Tạo danh mục cha
@@ -94,10 +94,10 @@ async function main() {
     // Lấy lại tất cả category bao gồm cả con
     const allCategories = await prisma.category.findMany();
 
-    // 5. TẠO USERS (Admin & Normal Users)
-    console.log('busts👤 Tạo Users...');
+    // 5. CREATE USERS (Admin & Normal Users)
+    console.log('👤 Creating Users...');
 
-    // Tạo 1 Admin cứng để test
+    // Create 1 Admin user for testing
     // Login: admin@bookstore.com / password123
     const adminUser = await prisma.user.create({
         data: {
@@ -111,8 +111,8 @@ async function main() {
         },
     });
 
-    // Tạo User thường
-    // Sử dụng createMany không được vì cần trả về ID để tạo Cart sau này, nên dùng loop
+    // Create regular users
+    // Using loop instead of createMany because we need the returned IDs to create Carts later
     const users = [];
     for (let i = 0; i < CONFIG.NUM_USERS; i++) {
         const user = await prisma.user.create({
@@ -125,7 +125,7 @@ async function main() {
                 phone: faker.phone.number(),
                 address: faker.location.streetAddress(),
                 avatar: faker.image.avatar(),
-                // Random OAuth simulation
+                // Random OAuth simulation (20% chance)
                 googleId: Math.random() > 0.8 ? faker.string.uuid() : null,
             },
         });
@@ -133,8 +133,8 @@ async function main() {
     }
     const allUsers = [adminUser, ...users];
 
-    // 6. TẠO BOOKS & BOOK AUTHORS
-    console.log('📖 Tạo Sách và liên kết Tác giả...');
+    // 6. CREATE BOOKS & BOOK AUTHORS
+    console.log('📖 Creating Books and linking Authors...');
     const books = [];
 
     for (let i = 0; i < CONFIG.NUM_BOOKS; i++) {
@@ -143,8 +143,8 @@ async function main() {
 
         const book = await prisma.book.create({
             data: {
-                title: faker.lorem.sentence(3),
-                price: parseFloat(faker.commerce.price({ min: 50000, max: 500000 })),
+                title: faker.commerce.productName() + ' ' + faker.word.noun(),
+                price: parseFloat(faker.commerce.price({ min: 10, max: 150 })),
                 stock: faker.number.int({ min: 0, max: 100 }),
                 description: faker.lorem.paragraph(),
                 imageUrl: faker.image.url(),
@@ -153,7 +153,7 @@ async function main() {
             },
         });
 
-        // Link với 1-3 tác giả ngẫu nhiên
+        // Link with 1-3 random authors
         const randomAuthors = faker.helpers.arrayElements(authors, faker.number.int({ min: 1, max: 3 }));
         await prisma.bookAuthor.createMany({
             data: randomAuthors.map(author => ({
@@ -165,16 +165,16 @@ async function main() {
         books.push(book);
     }
 
-    // 7. TẠO CART (Giỏ hàng)
-    console.log('🛒 Tạo Giỏ hàng cho User...');
+    // 7. CREATE CARTS
+    console.log('🛒 Creating Carts for Users...');
     for (const user of users) {
-        // 50% user có giỏ hàng
+        // 50% of users have a cart
         if (Math.random() > 0.5) {
             const cart = await prisma.cart.create({
                 data: { userId: user.id, total: 0 },
             });
 
-            // Thêm items vào cart
+            // Add items to cart
             const randomBooks = faker.helpers.arrayElements(books, faker.number.int({ min: 1, max: 3 }));
             let cartTotal = 0;
 
@@ -190,7 +190,7 @@ async function main() {
                 cartTotal += book.price * qty;
             }
 
-            // Update lại total cho cart
+            // Update cart total
             await prisma.cart.update({
                 where: { id: cart.id },
                 data: { total: cartTotal },
@@ -198,13 +198,13 @@ async function main() {
         }
     }
 
-    // 8. TẠO ORDERS & PAYMENTS (Phức tạp nhất)
-    console.log('📦 Tạo Đơn hàng và Thanh toán...');
+    // 8. CREATE ORDERS & PAYMENTS (Most complex)
+    console.log('📦 Creating Orders and Payments...');
     for (let i = 0; i < CONFIG.NUM_ORDERS; i++) {
         const randomUser = users[Math.floor(Math.random() * users.length)];
         const randomBooks = faker.helpers.arrayElements(books, faker.number.int({ min: 1, max: CONFIG.MAX_ITEMS_PER_ORDER }));
 
-        // Tính tổng tiền
+        // Calculate total
         let orderTotal = 0;
         const orderItemsData = randomBooks.map(book => {
             const qty = faker.number.int({ min: 1, max: 3 });
@@ -212,15 +212,15 @@ async function main() {
             return {
                 bookId: book.id,
                 quantity: qty,
-                price: book.price // Giá tại thời điểm mua
+                price: book.price // Price at time of purchase
             };
         });
 
-        // Random trạng thái đơn hàng
+        // Random order status
         const statuses = Object.values(OrderStatus);
         const status = statuses[Math.floor(Math.random() * statuses.length)];
 
-        // Nếu đã ship hoặc hoàn thành thì cần người confirm (Admin)
+        // If shipped or delivered, needs admin confirmation
         let confirmedById = null;
         if (['SHIPPED', 'DELIVERED'].includes(status)) {
             confirmedById = adminUser.id;
@@ -240,7 +240,7 @@ async function main() {
             }
         });
 
-        // Tạo Payment nếu đơn hàng không bị hủy
+        // Create Payment if order is not cancelled
         if (status !== 'CANCELLED') {
             let paymentStatus = PaymentStatus.PENDING;
             if (status === 'DELIVERED') paymentStatus = PaymentStatus.COMPLETED;
@@ -260,13 +260,13 @@ async function main() {
         }
     }
 
-    // 9. TẠO RATINGS & VOTES
-    console.log('⭐ Tạo Đánh giá và Bình chọn...');
+    // 9. CREATE RATINGS & VOTES
+    console.log('⭐ Creating Ratings and Votes...');
     for (let i = 0; i < CONFIG.NUM_RATINGS; i++) {
         const randomUser = users[Math.floor(Math.random() * users.length)];
         const randomBook = books[Math.floor(Math.random() * books.length)];
 
-        // Check unique constraint userId + bookId
+        // Check unique constraint (userId + bookId)
         const existingRating = await prisma.rating.findUnique({
             where: { userId_bookId: { userId: randomUser.id, bookId: randomBook.id } }
         });
@@ -281,25 +281,25 @@ async function main() {
                 }
             });
 
-            // Tạo votes cho rating này (Like/Dislike)
+            // Create votes for this rating (Like/Dislike)
             if (Math.random() > 0.5) {
                 const anotherUser = users[Math.floor(Math.random() * users.length)];
-                // Đảm bảo người vote không phải người viết review (logic thông thường)
+                // Ensure voter is not the reviewer
                 if (anotherUser.id !== randomUser.id) {
                     await prisma.ratingVote.create({
                         data: {
                             ratingId: rating.id,
                             userId: anotherUser.id,
-                            voteType: Math.random() > 0.2 ? 1 : -1, // 80% là upvote
+                            voteType: Math.random() > 0.2 ? 1 : -1, // 80% are upvotes
                         }
-                    }).catch(() => { }); // Bỏ qua lỗi duplicate nếu random trùng user
+                    }).catch(() => { }); // Ignore duplicate errors
                 }
             }
         }
     }
 
     // 10. PASSWORD RESET TOKENS
-    console.log('🔑 Tạo Tokens reset mật khẩu mẫu...');
+    console.log('🔑 Creating sample password reset tokens...');
     await prisma.passwordResetToken.create({
         data: {
             userId: users[0].id,
@@ -308,7 +308,7 @@ async function main() {
         }
     });
 
-    console.log('✅ SEEDING HOÀN TẤT!');
+    console.log('✅ SEEDING COMPLETE!');
     console.log(`- ${allUsers.length} Users`);
     console.log(`- ${books.length} Books`);
     console.log(`- ${CONFIG.NUM_ORDERS} Orders`);
@@ -316,7 +316,7 @@ async function main() {
 
 main()
     .catch((e) => {
-        console.error('❌ Lỗi seeding:', e);
+        console.error('❌ Seeding error:', e);
         process.exit(1);
     })
     .finally(async () => {
