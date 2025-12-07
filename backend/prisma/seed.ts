@@ -242,7 +242,7 @@ async function main() {
 
         // Create Payment if order is not cancelled
         if (status !== 'CANCELLED') {
-            let paymentStatus = PaymentStatus.PENDING;
+            let paymentStatus: PaymentStatus = PaymentStatus.PENDING;
             if (status === 'DELIVERED') paymentStatus = PaymentStatus.COMPLETED;
             if (status === 'PROCESSING') paymentStatus = Math.random() > 0.5 ? PaymentStatus.COMPLETED : PaymentStatus.PENDING;
 

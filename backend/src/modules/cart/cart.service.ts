@@ -19,25 +19,34 @@ export class CartService {
       },
     });
 
-    const ensuredCart =
-      cart ??
-      (await prisma.cart.create({
-        data: { userId },
-        include: {
-          items: {
-            include: {
-              book: {
-                include: {
-                  publisher: true,
-                  authors: { include: { author: true } },
-                },
+    if (cart) {
+      return cart;
+    }
+
+    // Verify user exists before creating cart
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Create cart for the user
+    const newCart = await prisma.cart.create({
+      data: { userId },
+      include: {
+        items: {
+          include: {
+            book: {
+              include: {
+                publisher: true,
+                authors: { include: { author: true } },
               },
             },
           },
         },
-      }));
+      },
+    });
 
-    return ensuredCart;
+    return newCart;
   }
 
   async addToCart(userId: string, data: AddToCartInput) {
