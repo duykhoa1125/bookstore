@@ -5,12 +5,15 @@ import { useState } from 'react'
 import { Edit, Trash2, User as UserIcon } from 'lucide-react'
 import Modal from '../../components/Modal'
 import ConfirmModal from '../../components/ConfirmModal'
+import Pagination from '../../components/Pagination'
 
 export default function AdminUsers() {
   const qc = useQueryClient()
   const [selected, setSelected] = useState<User | null>(null)
   const [form, setForm] = useState<Partial<User>>({})
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 15
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin-users'],
@@ -48,6 +51,13 @@ export default function AdminUsers() {
 
   const users = data?.data || []
 
+  // Pagination logic
+  const totalPages = Math.ceil(users.length / itemsPerPage)
+  const paginatedUsers = users.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  )
+
   return (
     <div className="max-w-[1600px] mx-auto p-8">
       <div className="mb-10">
@@ -68,7 +78,7 @@ export default function AdminUsers() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100/50 bg-white/30">
-              {users.map(u => (
+              {paginatedUsers.map(u => (
                 <tr key={u.id} className="hover:bg-blue-50/30 transition-colors group">
                   <td className="px-8 py-5 whitespace-nowrap">
                     <div className="flex items-center gap-3">
@@ -133,6 +143,19 @@ export default function AdminUsers() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="px-6 py-4 border-t border-gray-100">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              itemsPerPage={itemsPerPage}
+              totalItems={users.length}
+            />
+          </div>
+        )}
       </div>
 
       <Modal

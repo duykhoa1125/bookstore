@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { Plus, Edit, Trash2, BookOpen, Eye, Search, X, ChevronDown } from 'lucide-react'
 import { AdminTableSkeleton } from '../../components/SkeletonLoaders'
+import Pagination from '../../components/Pagination'
 import toast from 'react-hot-toast'
 import { Link } from 'react-router-dom'
 import { useState, useMemo } from 'react'
@@ -12,6 +13,9 @@ export default function AdminBooks() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [stockFilter, setStockFilter] = useState<'all' | 'instock' | 'lowstock' | 'outofstock'>('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
+
 
   const { data: booksData, isLoading } = useQuery({
     queryKey: ['books'],
@@ -45,6 +49,7 @@ export default function AdminBooks() {
 
   // Filter books based on search and filters
   const filteredBooks = useMemo(() => {
+    // Reset to page 1 when filters change (handled via dependency in useEffect below)
     return books.filter((book: any) => {
       // Search filter
       const searchLower = searchQuery.toLowerCase()
@@ -64,6 +69,13 @@ export default function AdminBooks() {
       return matchesSearch && matchesCategory && matchesStock
     })
   }, [books, searchQuery, selectedCategory, stockFilter])
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredBooks.length / itemsPerPage)
+  const paginatedBooks = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage
+    return filteredBooks.slice(start, start + itemsPerPage)
+  }, [filteredBooks, currentPage, itemsPerPage])
 
   const handleDelete = (id: string, title: string) => {
     if (confirm(`Are you sure you want to delete "${title}"?`)) {
@@ -101,7 +113,7 @@ export default function AdminBooks() {
                   type="text"
                   placeholder="Search books..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                   className="w-full pl-4 pr-20 h-11 bg-white border border-gray-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-300"
                 />
                 
@@ -126,7 +138,7 @@ export default function AdminBooks() {
               <div className="relative group">
                 <select
                   value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  onChange={(e) => { setSelectedCategory(e.target.value); setCurrentPage(1); }}
                   className="w-full pl-4 pr-10 h-11 bg-white border border-gray-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all appearance-none cursor-pointer shadow-sm hover:shadow-md hover:border-gray-300"
                 >
                   <option value="all">All Categories</option>
@@ -152,7 +164,7 @@ export default function AdminBooks() {
               ].map((filter) => (
                 <button
                   key={filter.id}
-                  onClick={() => setStockFilter(filter.id as any)}
+                  onClick={() => { setStockFilter(filter.id as 'all' | 'instock' | 'lowstock' | 'outofstock'); setCurrentPage(1); }}
                   className={`px-4 h-full rounded-lg text-xs font-semibold transition-all duration-200 flex items-center justify-center ${
                     stockFilter === filter.id
                       ? 'bg-gray-900 text-white shadow-sm'
@@ -203,7 +215,7 @@ export default function AdminBooks() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100/50 bg-white/30">
-                {filteredBooks.map((book: any) => (
+                {paginatedBooks.map((book: any) => (
                   <tr key={book.id} className="hover:bg-blue-50/30 transition-colors group">
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
@@ -297,6 +309,7 @@ export default function AdminBooks() {
                       setSearchQuery('')
                       setSelectedCategory('all')
                       setStockFilter('all')
+                      setCurrentPage(1)
                     }}
                     className="mt-4 text-blue-600 font-semibold hover:underline"
                   >
@@ -306,6 +319,19 @@ export default function AdminBooks() {
               </div>
             )}
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="px-6 py-4 border-t border-gray-100">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                itemsPerPage={itemsPerPage}
+                totalItems={filteredBooks.length}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

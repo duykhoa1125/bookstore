@@ -2,9 +2,10 @@ import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
-import { Search, ChevronDown, ChevronLeft, ChevronRight, X, Star, SlidersHorizontal, Tag, DollarSign, Sparkles } from 'lucide-react'
+import { Search, ChevronDown, X, Star, SlidersHorizontal, Tag, DollarSign, Sparkles } from 'lucide-react'
 import { BookCard } from '../components/BookCard'
 import { BookGridSkeleton } from '../components/SkeletonLoaders'
+import Pagination from '../components/Pagination'
 import toast from 'react-hot-toast'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -577,37 +578,14 @@ export default function Books() {
 
                   {/* Pagination */}
                   {totalPages > 1 && (
-                    <div className="flex justify-center items-center gap-2">
-                       <button
-                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                         disabled={currentPage === 1}
-                         className="p-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                       >
-                         <ChevronLeft className="w-5 h-5" />
-                       </button>
-                       
-                       {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                         <button
-                           key={page}
-                           onClick={() => setCurrentPage(page)}
-                           className={`w-10 h-10 rounded-lg font-medium transition-all ${
-                             currentPage === page
-                               ? 'bg-blue-600 text-white shadow-md'
-                               : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
-                           }`}
-                         >
-                           {page}
-                         </button>
-                       ))}
-
-                       <button
-                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                         disabled={currentPage === totalPages}
-                         className="p-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                       >
-                         <ChevronRight className="w-5 h-5" />
-                       </button>
-                    </div>
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      onPageChange={setCurrentPage}
+                      itemsPerPage={itemsPerPage}
+                      totalItems={filteredBooks.length}
+                      showItemsInfo={false}
+                    />
                   )}
                 </>
              ) : (

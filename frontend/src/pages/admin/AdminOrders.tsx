@@ -1,13 +1,16 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { Package, Loader2, Eye } from 'lucide-react'
+import Pagination from '../../components/Pagination'
 import toast from 'react-hot-toast'
 import { Link } from 'react-router-dom'
 
 export default function AdminOrders() {
   const queryClient = useQueryClient()
   const [pendingById, setPendingById] = useState<Record<string, boolean>>({})
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 15
 
   const { data: ordersData, isLoading } = useQuery({
     queryKey: ['admin-orders'],
@@ -55,6 +58,13 @@ export default function AdminOrders() {
   })
 
   const orders = ordersData?.data || []
+
+  // Pagination logic
+  const totalPages = Math.ceil(orders.length / itemsPerPage)
+  const paginatedOrders = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage
+    return orders.slice(start, start + itemsPerPage)
+  }, [orders, currentPage, itemsPerPage])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -107,7 +117,7 @@ export default function AdminOrders() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100/50 bg-white/30">
-              {orders.map((order) => (
+              {paginatedOrders.map((order) => (
                 <tr key={order.id} className="hover:bg-blue-50/30 transition-colors group">
                   <td className="px-8 py-5 whitespace-nowrap text-sm font-bold text-gray-900">
                     <span className="font-mono text-gray-500">#</span>{order.id.slice(0, 8)}
@@ -167,6 +177,19 @@ export default function AdminOrders() {
             </div>
           )}
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="px-6 py-4 border-t border-gray-100">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              itemsPerPage={itemsPerPage}
+              totalItems={orders.length}
+            />
+          </div>
+        )}
       </div>
     </div>
   )
