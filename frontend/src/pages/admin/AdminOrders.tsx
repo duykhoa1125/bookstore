@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
-import { Package, Loader2, Eye } from 'lucide-react'
+import { Package, Loader2, Eye, Search, X } from 'lucide-react'
 import Pagination from '../../components/Pagination'
 import toast from 'react-hot-toast'
 import { Link } from 'react-router-dom'
@@ -10,6 +10,8 @@ export default function AdminOrders() {
   const queryClient = useQueryClient()
   const [pendingById, setPendingById] = useState<Record<string, boolean>>({})
   const [currentPage, setCurrentPage] = useState(1)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED'>('all')
   const itemsPerPage = 15
 
   const { data: ordersData, isLoading } = useQuery({
@@ -59,12 +61,29 @@ export default function AdminOrders() {
 
   const orders = ordersData?.data || []
 
+  // Filter orders based on search and status
+  const filteredOrders = useMemo(() => {
+    return orders.filter((order: any) => {
+      // Search filter
+      const searchLower = searchQuery.toLowerCase()
+      const matchesSearch = !searchQuery ||
+        order.id.toLowerCase().includes(searchLower) ||
+        order.user?.fullName?.toLowerCase().includes(searchLower) ||
+        order.user?.email?.toLowerCase().includes(searchLower)
+
+      // Status filter
+      const matchesStatus = statusFilter === 'all' || order.status === statusFilter
+
+      return matchesSearch && matchesStatus
+    })
+  }, [orders, searchQuery, statusFilter])
+
   // Pagination logic
-  const totalPages = Math.ceil(orders.length / itemsPerPage)
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage)
   const paginatedOrders = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage
-    return orders.slice(start, start + itemsPerPage)
-  }, [orders, currentPage, itemsPerPage])
+    return filteredOrders.slice(start, start + itemsPerPage)
+  }, [filteredOrders, currentPage, itemsPerPage])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -97,10 +116,80 @@ export default function AdminOrders() {
 
   return (
     <div className="max-w-[1600px] mx-auto p-8 text-slate-800">
-      <div className="mb-10">
+      <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight text-gray-900">All Orders</h1>
         <p className="text-gray-500 mt-1 font-medium">Manage and track customer order fulfillment.</p>
       </div>
+
+      {/* Search and Filters */}
+      <div className="mb-6 flex flex-col lg:flex-row gap-4">
+        {/* Search Box */}
+        <div className="flex-1">
+          <div className="relative group">
+            <input
+              type="text"
+              placeholder="Search by order ID, customer name or email..."
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+              className="w-full pl-4 pr-16 h-11 bg-white border border-gray-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-300"
+            />
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+              {searchQuery && (
+                <button
+                  onClick={() => { setSearchQuery(''); setCurrentPage(1); }}
+                  className="p-1 rounded-full hover:bg-gray-100 text-gray-400 hover:text-red-500 transition-all"
+                  title="Clear search"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+              {searchQuery && <div className="h-4 w-px bg-gray-200"></div>}
+              <Search className="h-4 w-4 text-gray-400 group-focus-within:text-blue-500 transition-colors pointer-events-none" />
+            </div>
+          </div>
+        </div>
+
+        {/* Status Filter */}
+        <div className="flex-shrink-0">
+          <div className="bg-white border border-gray-200 p-1 rounded-xl flex items-center h-11 shadow-sm overflow-x-auto">
+            {[
+              { id: 'all', label: 'All' },
+              { id: 'PENDING', label: 'Pending' },
+              { id: 'PROCESSING', label: 'Processing' },
+              { id: 'SHIPPED', label: 'Shipped' },
+              { id: 'DELIVERED', label: 'Delivered' },
+              { id: 'CANCELLED', label: 'Cancelled' }
+            ].map((filter) => (
+              <button
+                key={filter.id}
+                onClick={() => { setStatusFilter(filter.id as typeof statusFilter); setCurrentPage(1); }}
+                className={`px-3 h-full rounded-lg text-xs font-semibold transition-all duration-200 flex items-center justify-center whitespace-nowrap ${
+                  statusFilter === filter.id
+                    ? 'bg-gray-900 text-white shadow-sm'
+                    : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Results count */}
+      {(searchQuery || statusFilter !== 'all') && (
+        <div className="mb-4 flex items-center justify-between">
+          <p className="text-sm text-gray-500">
+            Found <span className="font-semibold text-gray-700">{filteredOrders.length}</span> orders
+          </p>
+          <button 
+            onClick={() => { setSearchQuery(''); setStatusFilter('all'); setCurrentPage(1); }}
+            className="text-sm text-red-600 hover:text-red-700 font-medium hover:underline"
+          >
+            Clear filters
+          </button>
+        </div>
+      )}
 
       <div className="bg-white/70 backdrop-blur-xl rounded-3xl border border-white/60 shadow-lg shadow-gray-200/50 overflow-hidden">
         <div className="overflow-x-auto">

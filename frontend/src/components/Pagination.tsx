@@ -95,7 +95,7 @@ export default function Pagination({
 
         {/* Page Numbers */}
         <div className="flex items-center gap-1">
-          {getPageNumbers().map((page, index) => {
+          {getPageNumbers().map((page) => {
             if (page === 'ellipsis-start' || page === 'ellipsis-end') {
               return (
                 <span

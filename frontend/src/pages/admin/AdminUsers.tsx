@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { User } from '../../types'
-import { useState } from 'react'
-import { Edit, Trash2, User as UserIcon } from 'lucide-react'
+import { useState, useMemo } from 'react'
+import { Edit, Trash2, User as UserIcon, Search, X } from 'lucide-react'
 import Modal from '../../components/Modal'
 import ConfirmModal from '../../components/ConfirmModal'
 import Pagination from '../../components/Pagination'
@@ -13,6 +13,8 @@ export default function AdminUsers() {
   const [form, setForm] = useState<Partial<User>>({})
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [roleFilter, setRoleFilter] = useState<'all' | 'USER' | 'ADMIN'>('all')
   const itemsPerPage = 15
 
   const { data, isLoading, error } = useQuery({
@@ -46,24 +48,109 @@ export default function AdminUsers() {
     updateMutation.mutate({ id: selected.id, data: form })
   }
 
-  if (isLoading) return <div className="p-6">Loading users...</div>
-  if (error) return <div className="p-6 text-red-600">Error loading users</div>
-
   const users = data?.data || []
 
+  // Filter users based on search and role
+  const filteredUsers = useMemo(() => {
+    return users.filter((user: User) => {
+      // Search filter
+      const searchLower = searchQuery.toLowerCase()
+      const matchesSearch = !searchQuery ||
+        user.fullName?.toLowerCase().includes(searchLower) ||
+        user.email?.toLowerCase().includes(searchLower) ||
+        user.username?.toLowerCase().includes(searchLower)
+
+      // Role filter
+      const matchesRole = roleFilter === 'all' || user.role === roleFilter
+
+      return matchesSearch && matchesRole
+    })
+  }, [users, searchQuery, roleFilter])
+
   // Pagination logic
-  const totalPages = Math.ceil(users.length / itemsPerPage)
-  const paginatedUsers = users.slice(
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage)
+  const paginatedUsers = filteredUsers.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   )
 
+  if (isLoading) return <div className="p-6">Loading users...</div>
+  if (error) return <div className="p-6 text-red-600">Error loading users</div>
+
+
   return (
     <div className="max-w-[1600px] mx-auto p-8">
-      <div className="mb-10">
+      <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight text-gray-900">Manage Users</h1>
         <p className="text-gray-500 mt-1 font-medium">View, edit, and manage user accounts and permissions.</p>
       </div>
+
+      {/* Search and Filters */}
+      <div className="mb-6 flex flex-col lg:flex-row gap-4">
+        {/* Search Box */}
+        <div className="flex-1">
+          <div className="relative group">
+            <input
+              type="text"
+              placeholder="Search by name, email or username..."
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+              className="w-full pl-4 pr-16 h-11 bg-white border border-gray-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-300"
+            />
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+              {searchQuery && (
+                <button
+                  onClick={() => { setSearchQuery(''); setCurrentPage(1); }}
+                  className="p-1 rounded-full hover:bg-gray-100 text-gray-400 hover:text-red-500 transition-all"
+                  title="Clear search"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+              {searchQuery && <div className="h-4 w-px bg-gray-200"></div>}
+              <Search className="h-4 w-4 text-gray-400 group-focus-within:text-blue-500 transition-colors pointer-events-none" />
+            </div>
+          </div>
+        </div>
+
+        {/* Role Filter */}
+        <div className="flex-shrink-0">
+          <div className="bg-white border border-gray-200 p-1 rounded-xl flex items-center h-11 shadow-sm">
+            {[
+              { id: 'all', label: 'All Roles' },
+              { id: 'USER', label: 'Users' },
+              { id: 'ADMIN', label: 'Admins' }
+            ].map((filter) => (
+              <button
+                key={filter.id}
+                onClick={() => { setRoleFilter(filter.id as typeof roleFilter); setCurrentPage(1); }}
+                className={`px-4 h-full rounded-lg text-xs font-semibold transition-all duration-200 flex items-center justify-center ${
+                  roleFilter === filter.id
+                    ? 'bg-gray-900 text-white shadow-sm'
+                    : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Results count */}
+      {(searchQuery || roleFilter !== 'all') && (
+        <div className="mb-4 flex items-center justify-between">
+          <p className="text-sm text-gray-500">
+            Found <span className="font-semibold text-gray-700">{filteredUsers.length}</span> users
+          </p>
+          <button 
+            onClick={() => { setSearchQuery(''); setRoleFilter('all'); setCurrentPage(1); }}
+            className="text-sm text-red-600 hover:text-red-700 font-medium hover:underline"
+          >
+            Clear filters
+          </button>
+        </div>
+      )}
 
       <div className="bg-white/70 backdrop-blur-xl rounded-3xl border border-white/60 shadow-lg shadow-gray-200/50 overflow-hidden">
         <div className="overflow-x-auto">

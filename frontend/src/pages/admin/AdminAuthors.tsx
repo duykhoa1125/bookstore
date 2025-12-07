@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
-import { Plus, Edit, Trash2, Users } from 'lucide-react'
+import { Plus, Edit, Trash2, Users, Search, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Modal from '../../components/Modal'
 import ConfirmModal from '../../components/ConfirmModal'
@@ -14,6 +14,7 @@ export default function AdminAuthors() {
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [name, setName] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
+  const [searchQuery, setSearchQuery] = useState('')
   const itemsPerPage = 15
 
   const { data: authorsData, isLoading } = useQuery({
@@ -62,9 +63,18 @@ export default function AdminAuthors() {
 
   const authors = authorsData?.data || []
 
+  // Filter authors based on search
+  const filteredAuthors = useMemo(() => {
+    if (!searchQuery) return authors
+    const searchLower = searchQuery.toLowerCase()
+    return authors.filter((author: any) => 
+      author.name.toLowerCase().includes(searchLower)
+    )
+  }, [authors, searchQuery])
+
   // Pagination logic
-  const totalPages = Math.ceil(authors.length / itemsPerPage)
-  const paginatedAuthors = authors.slice(
+  const totalPages = Math.ceil(filteredAuthors.length / itemsPerPage)
+  const paginatedAuthors = filteredAuthors.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   )
@@ -83,8 +93,6 @@ export default function AdminAuthors() {
     setName(author.name)
     setShowCreateModal(true)
   }
-
-
 
   return (
 
@@ -107,6 +115,37 @@ export default function AdminAuthors() {
           </div>
           <span className="font-semibold">Add Author</span>
         </button>
+      </div>
+
+      {/* Search Box */}
+      <div className="mb-6">
+        <div className="relative group max-w-md">
+          <input
+            type="text"
+            placeholder="Search authors by name..."
+            value={searchQuery}
+            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+            className="w-full pl-4 pr-16 h-11 bg-white border border-gray-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm hover:shadow-md hover:border-gray-300"
+          />
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+            {searchQuery && (
+              <button
+                onClick={() => { setSearchQuery(''); setCurrentPage(1); }}
+                className="p-1 rounded-full hover:bg-gray-100 text-gray-400 hover:text-red-500 transition-all"
+                title="Clear search"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+            {searchQuery && <div className="h-4 w-px bg-gray-200"></div>}
+            <Search className="h-4 w-4 text-gray-400 group-focus-within:text-blue-500 transition-colors pointer-events-none" />
+          </div>
+        </div>
+        {searchQuery && (
+          <p className="text-sm text-gray-500 mt-2">
+            Found <span className="font-semibold text-gray-700">{filteredAuthors.length}</span> authors
+          </p>
+        )}
       </div>
 
       <Modal
