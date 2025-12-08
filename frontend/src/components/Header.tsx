@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import type { Book } from '../types'
+import Logo from './Logo'
 
 // Debounce hook
 function useDebounce<T>(value: T, delay: number): T {
@@ -286,14 +287,7 @@ export default function Header() {
             </button>
 
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-2 sm:gap-2.5 group shrink-0">
-              <div className="relative bg-black p-2 sm:p-2.5 rounded-xl transition-all duration-300 group-hover:scale-105">
-                <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-white relative z-10" />
-              </div>
-              <span className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight group-hover:text-blue-600 transition-colors duration-300">
-                BookStore
-              </span>
-            </Link>
+            <Logo />
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-2 bg-gray-100/50 p-1.5 rounded-full border border-white/50 backdrop-blur-sm">
@@ -585,12 +579,9 @@ export default function Header() {
         <div className="flex flex-col h-full">
           {/* Menu Header */}
           <div className="flex items-center justify-between p-4 border-b border-gray-100">
-            <Link to="/" onClick={handleMobileNavClick} className="flex items-center gap-2.5">
-              <div className="bg-black p-2 rounded-xl">
-                <BookOpen className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-gray-900">BookStore</span>
-            </Link>
+            <div onClick={handleMobileNavClick}>
+              <Logo variant="mobile" />
+            </div>
             <button
               onClick={() => setIsMobileMenuOpen(false)}
               className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all"

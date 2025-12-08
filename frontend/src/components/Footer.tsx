@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
-import { Facebook, Twitter, Instagram, Github, Mail, Phone, MapPin, BookOpen } from 'lucide-react'
+import { Facebook, Twitter, Instagram, Github, Mail, Phone, MapPin } from 'lucide-react'
+import Logo from './Logo'
 
 export default function Footer() {
   return (
@@ -13,14 +14,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
           {/* Brand */}
           <div className="space-y-6">
-            <Link to="/" className="flex items-center gap-2.5 group w-fit">
-              <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-2 rounded-lg shadow-lg shadow-blue-500/20 group-hover:shadow-blue-500/30 transition-all duration-300">
-                <BookOpen className="w-6 h-6 text-white" />
-              </div>
-              <span className="text-2xl font-bold text-white tracking-tight group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-blue-400 group-hover:to-indigo-400 transition-all duration-300">
-                BookStore
-              </span>
-            </Link>
+            <Logo variant="footer" className="w-fit" />
             <p className="text-sm leading-relaxed text-gray-400 max-w-xs">
               Your premier destination for literary adventures. Discover, learn, and grow with our curated collection of books from around the globe.
             </p>
@@ -81,7 +75,7 @@ export default function Footer() {
                 <div className="p-2 bg-gray-800 rounded-lg group-hover:bg-blue-600/20 group-hover:text-blue-500 transition-colors shrink-0">
                   <Mail className="w-5 h-5" />
                 </div>
-                <span className="text-sm group-hover:text-gray-200 transition-colors">hello@bookstore.com</span>
+                <span className="text-sm group-hover:text-gray-200 transition-colors">hello@inkwell.com</span>
               </li>
             </ul>
           </div>
@@ -113,7 +107,7 @@ export default function Footer() {
 
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-gray-800 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-gray-500">© 2024 BookStore Inc. All rights reserved.</p>
+          <p className="text-sm text-gray-500">© 2024 Inkwell Inc. All rights reserved.</p>
           <div className="flex items-center gap-8">
             <a href="#" className="text-sm text-gray-500 hover:text-blue-400 transition-colors">Privacy Policy</a>
             <a href="#" className="text-sm text-gray-500 hover:text-blue-400 transition-colors">Terms of Service</a>

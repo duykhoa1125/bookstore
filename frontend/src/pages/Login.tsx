@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import Logo from '../components/Logo'
 import { useAuth } from '../contexts/AuthContext'
-import { BookOpen, Mail, Lock, ArrowRight, Sparkles, Eye, EyeOff } from 'lucide-react'
+import { Mail, Lock, ArrowRight, Sparkles, Eye, EyeOff } from 'lucide-react'
 import { GoogleLogin, CredentialResponse } from '@react-oauth/google'
 
 export default function Login() {
@@ -56,8 +57,8 @@ export default function Login() {
 
         {/* Content */}
         <div className="relative z-10 flex flex-col items-center justify-center w-full p-12 text-white">
-          <div className="mb-8 p-4 bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10">
-            <BookOpen className="w-16 h-16 text-blue-400" />
+          <div className="mb-8">
+            <Logo variant="auth" />
           </div>
           <h1 className="text-4xl font-bold mb-4 text-center tracking-tight">Welcome Back</h1>
           <p className="text-lg text-slate-400 text-center max-w-md font-light leading-relaxed">
@@ -87,9 +88,7 @@ export default function Login() {
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
           <div className="lg:hidden flex justify-center mb-8">
-            <div className="p-3 bg-slate-900 rounded-2xl">
-              <BookOpen className="w-10 h-10 text-white" />
-            </div>
+            <Logo />
           </div>
 
           {/* Header */}

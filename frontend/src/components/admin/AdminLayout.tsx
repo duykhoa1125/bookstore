@@ -13,6 +13,7 @@ import {
   ChevronLeft,
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
+import Logo from '../Logo'
 import { useState, useEffect } from 'react'
 
 export default function AdminLayout() {
@@ -65,12 +66,10 @@ export default function AdminLayout() {
         >
           <Menu className="w-6 h-6" />
         </button>
-        <Link to="/" className="flex items-center gap-2">
-          <div className="bg-gradient-to-br from-gray-900 to-black p-2 rounded-xl text-white">
-            <BookOpen className="w-5 h-5" />
-          </div>
-          <span className="text-lg font-bold text-gray-900">Admin</span>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Logo showText={false} variant="mobile" />
+          <Link to="/" className="text-lg font-bold text-gray-900">Admin</Link>
+        </div>
         <Link 
           to="/" 
           className="p-2 text-gray-500 hover:text-blue-600 rounded-xl transition-all"
@@ -96,14 +95,12 @@ export default function AdminLayout() {
       `}>
         {/* Logo */}
         <div className="p-4 lg:p-6 border-b border-gray-100/50 flex items-center justify-between">
-          <Link to="/" className="flex items-center space-x-3 group">
-            <div className="bg-gradient-to-br from-gray-900 to-black p-2 lg:p-2.5 rounded-xl text-white shadow-lg shadow-gray-500/20 group-hover:scale-105 transition-transform duration-300">
-              <BookOpen className="w-5 h-5 lg:w-6 lg:h-6" />
-            </div>
-            <span className="text-lg lg:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600">
+          <div className="flex items-center space-x-3 group">
+            <Logo showText={false} />
+            <Link to="/" className="text-lg lg:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 block">
               Admin
-            </span>
-          </Link>
+            </Link>
+          </div>
           <button
             onClick={() => setIsMobileMenuOpen(false)}
             className="lg:hidden p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-all"
