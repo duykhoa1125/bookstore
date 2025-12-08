@@ -482,7 +482,7 @@ async function main() {
             data: { userId: user.id, total: 0 },
         });
 
-        const randomBooks = [];
+        const randomBooks: any[] = [];
         const numItems = randomInt(1, 3);
         for (let i = 0; i < numItems; i++) {
             let book = randomElement(books);
