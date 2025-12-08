@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
-import { BookOpen, Award, Sparkles, ArrowRight, ChevronLeft, ChevronRight, Mail, Truck } from 'lucide-react'
+import { BookOpen, Award, Sparkles, ArrowRight, ChevronLeft, ChevronRight, Mail, Truck, Search, Heart, Rocket, Brain, Briefcase, Cpu, Code, Palette, Baby, Layers, Activity, UtensilsCrossed, Compass } from 'lucide-react'
 import { BookCard } from '../components/BookCard'
 import { BookGridSkeleton } from '../components/SkeletonLoaders'
 import toast from 'react-hot-toast'
@@ -109,7 +109,34 @@ export default function Home() {
   }
 
   const featuredBooks = (booksData?.data || []).slice(0, 8)
-  const categories = (categoriesData?.data || []).slice(0, 6)
+  const categories = (categoriesData?.data || []).slice(0, 15) // Show more categories
+
+  // Category icon mapping for realistic book categories
+  const categoryIconConfig: Record<string, { icon: React.ReactNode; bgColor: string; textColor: string }> = {
+    'Fiction': { icon: <BookOpen className="w-8 h-8" />, bgColor: 'from-blue-500/20 to-blue-600/10', textColor: 'text-blue-600' },
+    'Mystery & Thriller': { icon: <Search className="w-8 h-8" />, bgColor: 'from-red-500/20 to-red-600/10', textColor: 'text-red-600' },
+    'Science Fiction & Fantasy': { icon: <Rocket className="w-8 h-8" />, bgColor: 'from-purple-500/20 to-purple-600/10', textColor: 'text-purple-600' },
+    'Romance': { icon: <Heart className="w-8 h-8" />, bgColor: 'from-pink-500/20 to-pink-600/10', textColor: 'text-pink-600' },
+    'Non-Fiction': { icon: <BookOpen className="w-8 h-8" />, bgColor: 'from-amber-500/20 to-amber-600/10', textColor: 'text-amber-600' },
+    'Self-Help & Personal Development': { icon: <Brain className="w-8 h-8" />, bgColor: 'from-teal-500/20 to-teal-600/10', textColor: 'text-teal-600' },
+    'Business & Economics': { icon: <Briefcase className="w-8 h-8" />, bgColor: 'from-emerald-500/20 to-emerald-600/10', textColor: 'text-emerald-600' },
+    'Science & Technology': { icon: <Cpu className="w-8 h-8" />, bgColor: 'from-cyan-500/20 to-cyan-600/10', textColor: 'text-cyan-600' },
+    'Programming & Software': { icon: <Code className="w-8 h-8" />, bgColor: 'from-indigo-500/20 to-indigo-600/10', textColor: 'text-indigo-600' },
+    'Art & Design': { icon: <Palette className="w-8 h-8" />, bgColor: 'from-orange-500/20 to-orange-600/10', textColor: 'text-orange-600' },
+    "Children's Books": { icon: <Baby className="w-8 h-8" />, bgColor: 'from-yellow-500/20 to-yellow-600/10', textColor: 'text-yellow-600' },
+    'Comics & Graphic Novels': { icon: <Layers className="w-8 h-8" />, bgColor: 'from-violet-500/20 to-violet-600/10', textColor: 'text-violet-600' },
+    'Health & Wellness': { icon: <Activity className="w-8 h-8" />, bgColor: 'from-green-500/20 to-green-600/10', textColor: 'text-green-600' },
+    'Cooking & Food': { icon: <UtensilsCrossed className="w-8 h-8" />, bgColor: 'from-rose-500/20 to-rose-600/10', textColor: 'text-rose-600' },
+    'Travel & Adventure': { icon: <Compass className="w-8 h-8" />, bgColor: 'from-sky-500/20 to-sky-600/10', textColor: 'text-sky-600' },
+  }
+
+  const getCategoryConfig = (name: string) => {
+    return categoryIconConfig[name] || { 
+      icon: <BookOpen className="w-8 h-8" />, 
+      bgColor: 'from-gray-500/20 to-gray-600/10', 
+      textColor: 'text-gray-600' 
+    }
+  }
 
   return (
     <GlowEffect>
@@ -315,25 +342,30 @@ export default function Home() {
       <section className="py-20 bg-transparent border-t border-gray-100/50">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-gray-900 mb-10 text-center">Browse by Genre</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-              {categories.map((category) => (
-                <Link 
-                  key={category.id} 
-                  to={`/books?categoryId=${category.id}`} 
-                  className="group relative overflow-hidden rounded-3xl aspect-[4/3] bg-white border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-white via-gray-50 to-blue-50/50 z-0" />
-                  
-                  {/* Decorative Elements */}
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-400/10 to-purple-400/10 rounded-full blur-2xl -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-700"></div>
-                  
-                  <div className="absolute inset-0 flex flex-col items-center justify-center z-10 p-6 text-center">
-                     <span className="text-4xl mb-4 transform group-hover:scale-110 transition-transform duration-300 drop-shadow-sm">📖</span>
-                     <h3 className="font-bold text-gray-900 text-lg group-hover:text-blue-600 transition-colors">{category.name}</h3>
-                     <p className="text-xs text-gray-500 mt-2 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">Explore Genre →</p>
-                  </div>
-                </Link>
-              ))}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              {categories.map((category) => {
+                const config = getCategoryConfig(category.name)
+                return (
+                  <Link 
+                    key={category.id} 
+                    to={`/books?categoryId=${category.id}`} 
+                    className="group relative overflow-hidden rounded-3xl aspect-[4/3] bg-white border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+                  >
+                    <div className={`absolute inset-0 bg-gradient-to-br ${config.bgColor} z-0`} />
+                    
+                    {/* Decorative Elements */}
+                    <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${config.bgColor} rounded-full blur-2xl -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-700`}></div>
+                    
+                    <div className="absolute inset-0 flex flex-col items-center justify-center z-10 p-4 text-center">
+                       <div className={`mb-3 ${config.textColor} transform group-hover:scale-110 transition-transform duration-300`}>
+                         {config.icon}
+                       </div>
+                       <h3 className={`font-bold text-gray-900 text-sm leading-tight group-hover:${config.textColor} transition-colors`}>{category.name}</h3>
+                       <p className="text-xs text-gray-500 mt-2 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">Explore →</p>
+                    </div>
+                  </Link>
+                )
+              })}
           </div>
         </div>
       </section>
