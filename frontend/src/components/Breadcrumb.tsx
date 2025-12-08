@@ -1,5 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
 import { ChevronRight, Home } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { api } from '../lib/api'
 
 interface BreadcrumbItem {
   label: string
@@ -9,6 +11,20 @@ interface BreadcrumbItem {
 export default function Breadcrumb() {
   const location = useLocation()
   const pathnames = location.pathname.split('/').filter((x) => x)
+
+  // Check if we're on a book detail page
+  const isBookDetailPage = pathnames.length === 2 && pathnames[0] === 'books' && /^[a-z0-9-]{20,}$/i.test(pathnames[1])
+  const bookId = isBookDetailPage ? pathnames[1] : null
+
+  // Fetch book data if on book detail page
+  const { data: bookData } = useQuery({
+    queryKey: ['book', bookId],
+    queryFn: () => api.getBook(bookId!),
+    enabled: !!bookId,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  })
+
+  const bookTitle = bookData?.data?.title
 
   // Special cases for route labels
   const routeLabels: Record<string, string> = {
@@ -32,12 +48,18 @@ export default function Breadcrumb() {
   const breadcrumbItems: BreadcrumbItem[] = []
   let currentPath = ''
 
-  pathnames.forEach((segment) => {
+  pathnames.forEach((segment, index) => {
     currentPath += `/${segment}`
     
-    // Skip numeric IDs in breadcrumb display (show as dynamic segment)
-    if (/^[a-z0-9-]{20,}$/i.test(segment)) {
-      // This looks like an ID, we'll show "Details"
+    // Check if this segment is the book ID on a book detail page
+    if (isBookDetailPage && index === 1) {
+      // Use book title if available, otherwise show loading or fallback
+      breadcrumbItems.push({
+        label: bookTitle || 'Loading...',
+        path: currentPath,
+      })
+    } else if (/^[a-z0-9-]{20,}$/i.test(segment)) {
+      // This looks like an ID, we'll show "Details" for non-book pages
       breadcrumbItems.push({
         label: 'Details',
         path: currentPath,
