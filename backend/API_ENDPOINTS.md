@@ -23,7 +23,7 @@ API này cung cấp các endpoints để quản lý hệ thống bán sách tr�
 - Prisma ORM + PostgreSQL
 - JWT Authentication
 - Cloudinary (Image storage)
-- Resend (Email service)
+- Resend (Email service - Password Reset & Order Confirmation)
 - Zod (Validation)
 
 ---
@@ -468,6 +468,14 @@ Trả về danh sách sách có cùng category hoặc authors với sách hiện
 
 > 💡 **Lưu ý:** Nếu `cartItemIds` được cung cấp, chỉ các item được chọn sẽ được tạo thành đơn hàng. Nếu không, toàn bộ giỏ hàng sẽ được checkout.
 
+> 📧 **Order Confirmation Email:** Sau khi đơn hàng được tạo thành công, hệ thống sẽ tự động gửi email xác nhận đơn hàng đến địa chỉ email của khách hàng. Email bao gồm:
+> - Order ID và ngày đặt hàng
+> - Danh sách các sản phẩm đã mua (tên sách, số lượng, giá)
+> - Tổng giá trị đơn hàng
+> - Địa chỉ giao hàng
+> - Phương thức thanh toán
+> - Link xem chi tiết đơn hàng
+
 #### PATCH `/:id/status` - Cập nhật trạng thái
 
 **Request Body:**
@@ -635,8 +643,52 @@ Cho phép user upvote hoặc downvote một đánh giá của người khác. N�
 ```
 
 **Các trạng thái thanh toán:**
+- `PENDING` - Chờ thanh toán
 - `COMPLETED` - Thanh toán thành công
 - `FAILED` - Thanh toán thất bại
+- `REFUNDED` - Đã hoàn tiền
+
+> 💡 **Lưu ý:** Sau khi thanh toán thành công (`COMPLETED`), khách hàng sẽ được chuyển đến trang **Payment Success** với:
+> - Animation confetti chúc mừng
+> - Thông báo email xác nhận đã được gửi
+> - Link xem chi tiết đơn hàng
+
+---
+
+## Email Notifications (Thông báo Email)
+
+**Service:** Resend
+
+> ⚠️ **Lưu ý:** Email notifications được xử lý bất đồng bộ và không block các API responses. Nếu việc gửi email thất bại, đơn hàng vẫn được tạo thành công.
+
+### Các loại Email
+
+| Loại Email | Trigger | Nội dung |
+|------------|---------|----------|
+| **Order Confirmation** | Sau khi tạo đơn hàng thành công | Chi tiết đơn hàng, danh sách sản phẩm, tổng tiền, địa chỉ giao hàng |
+| **Password Reset** | Khi user yêu cầu quên mật khẩu | Link reset password (hết hạn sau 1 giờ) |
+
+### Environment Variables
+
+```env
+# Resend Configuration
+RESEND_API_KEY="your-resend-api-key"
+RESEND_FROM_EMAIL="Bookstore <onboarding@resend.dev>"
+
+# Frontend URL (used in email links)
+FRONTEND_URL="https://your-frontend-domain.com"
+```
+
+### Order Confirmation Email Content
+
+Email xác nhận đơn hàng bao gồm:
+- ✅ Banner thông báo đơn hàng thành công
+- 📦 Order ID và ngày đặt hàng
+- 📚 Bảng chi tiết sản phẩm (tên, số lượng, giá)
+- 💰 Tổng giá trị đơn hàng
+- 📍 Địa chỉ giao hàng
+- 💳 Phương thức thanh toán
+- 🔗 Button "View Order Details" link đến trang chi tiết đơn hàng
 
 ---
 

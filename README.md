@@ -20,7 +20,8 @@
 - **🔐 Xác thực**: Đăng ký, đăng nhập, đăng nhập bằng Google OAuth 2.0, quên mật khẩu & đặt lại mật khẩu
 - **📖 Duyệt sách**: Tìm kiếm, lọc theo danh mục, tác giả, nhà xuất bản, khoảng giá
 - **🛒 Giỏ hàng**: Thêm/xóa sách, cập nhật số lượng, chọn item để checkout
-- **📦 Đặt hàng**: Thanh toán, theo dõi đơn hàng, xem chi tiết đơn hàng
+- **📦 Đặt hàng**: Thanh toán, theo dõi đơn hàng với **Order Timeline**, xem chi tiết đơn hàng
+- **📧 Email thông báo**: Nhận email xác nhận đơn hàng tự động sau khi đặt hàng thành công
 - **⭐ Đánh giá**: Đánh giá và bình luận sách, upvote/downvote review của người khác
 - **👤 Hồ sơ**: Quản lý thông tin cá nhân, upload avatar, đổi mật khẩu
 
@@ -312,6 +313,15 @@ Chi tiết về các endpoints API có thể xem tại file: [`backend/API_ENDPO
   - Chọn items cụ thể để checkout
   - Confirmation modal trước khi đặt hàng
   - Order summary rõ ràng với breakdown chi phí
+- **Enhanced Payment UX**:
+  - **Order Confirmation Email**: Email xác nhận tự động với chi tiết đơn hàng
+  - **Payment Success Page**: Trang thanh toán thành công với confetti animation
+  - **Order Timeline**: Hiển thị tiến trình đơn hàng (Placed → Processing → Shipped → Delivered)
+  - **Payment Instructions**: Hướng dẫn thanh toán chi tiết theo từng phương thức (COD, Bank Transfer, Online Payment)
+- **Chi Tiết Đơn Hàng**:
+  - Order progress timeline với visual indicators
+  - Payment status và instructions
+  - Shipping information
 - **Admin Dashboard**: 
   - Charts và biểu đồ thống kê với Recharts
   - Custom modals cho create/edit/delete
