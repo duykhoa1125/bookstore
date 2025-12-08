@@ -266,3 +266,85 @@ body {
   animation: pulseGlow 2s ease-in-out infinite;
 }
 
+/* Safe Area Insets for notched devices */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0);
+}
+
+/* Touch-friendly tap targets */
+@media (hover: none) and (pointer: coarse) {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Mobile-first typography scaling */
+@media (max-width: 640px) {
+  .text-responsive-xl {
+    font-size: 1.5rem;
+    line-height: 2rem;
+  }
+  
+  .text-responsive-2xl {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+  }
+  
+  .text-responsive-3xl {
+    font-size: 2.25rem;
+    line-height: 2.5rem;
+  }
+}
+
+@media (min-width: 641px) {
+  .text-responsive-xl {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+  }
+  
+  .text-responsive-2xl {
+    font-size: 2.25rem;
+    line-height: 2.5rem;
+  }
+  
+  .text-responsive-3xl {
+    font-size: 3rem;
+    line-height: 1;
+  }
+}
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Smooth scroll for mobile */
+@media (max-width: 1024px) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Prevent zoom on input focus on iOS */
+@media screen and (-webkit-min-device-pixel-ratio:0) { 
+  select,
+  textarea,
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="number"] {
+    font-size: 16px;
+  }
+}

@@ -295,26 +295,29 @@ export default function AdminDashboardOverview() {
   }
 
   return (
-    <div className="p-8 max-w-[1600px] mx-auto relative">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto relative">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 lg:mb-10 gap-4">
         <div>
-          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight mb-1">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 tracking-tight mb-1">
             Dashboard Overview
           </h1>
-          <p className="text-gray-500 font-medium">Welcome back, here's what's happening today.</p>
+          <p className="text-gray-500 font-medium text-sm sm:text-base">Welcome back, here's what's happening today.</p>
         </div>
         
         <div className="relative">
           <button 
             onClick={() => setIsTimeDropdownOpen(!isTimeDropdownOpen)}
-            className="flex items-center space-x-2 px-5 py-2.5 border border-white/50 rounded-xl text-sm font-semibold text-gray-700 bg-white/50 backdrop-blur-md shadow-sm hover:bg-white hover:shadow-md transition-all duration-300 ring-1 ring-gray-900/5"
+            className="flex items-center space-x-2 px-4 sm:px-5 py-2 sm:py-2.5 border border-white/50 rounded-xl text-sm font-semibold text-gray-700 bg-white/50 backdrop-blur-md shadow-sm hover:bg-white hover:shadow-md transition-all duration-300 ring-1 ring-gray-900/5"
           >
             <Calendar className="w-4 h-4 text-blue-600" />
-            <span>
+            <span className="hidden sm:inline">
               {timeRange === '6M' ? 'Last 6 Months' : 
                timeRange === '30D' ? 'Last Month' : 
                timeRange === '7D' ? 'Last Week' : 'Yesterday'}
+            </span>
+            <span className="sm:hidden">
+              {timeRange}
             </span>
             <svg className={`w-4 h-4 transition-transform ${isTimeDropdownOpen ? 'rotate-180' : ''} text-gray-400`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -344,24 +347,24 @@ export default function AdminDashboardOverview() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 lg:mb-8">
         {stats.map((stat) => {
           const Icon = stat.icon
           return (
-            <div key={stat.title} className="group bg-white/60 backdrop-blur-xl rounded-3xl p-6 border border-white/60 shadow-lg shadow-gray-200/50 hover:shadow-xl hover:scale-[1.02] transition-all duration-300">
-              <div className="flex items-start justify-between mb-5">
+            <div key={stat.title} className="group bg-white/60 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-3 sm:p-4 lg:p-6 border border-white/60 shadow-lg shadow-gray-200/50 hover:shadow-xl hover:scale-[1.02] transition-all duration-300">
+              <div className="flex items-start justify-between mb-2 sm:mb-4 lg:mb-5">
                 <div>
-                  <p className="text-sm font-semibold text-gray-500 mb-1 tracking-wide uppercase">{stat.title}</p>
-                  <h3 className="text-3xl font-black text-gray-900 tracking-tight">{stat.value}</h3>
+                  <p className="text-[10px] sm:text-xs lg:text-sm font-semibold text-gray-500 mb-0.5 sm:mb-1 tracking-wide uppercase">{stat.title}</p>
+                  <h3 className="text-lg sm:text-xl lg:text-3xl font-black text-gray-900 tracking-tight">{stat.value}</h3>
                 </div>
-                <div className={`${stat.bgColor} ${stat.color} p-3.5 rounded-2xl shadow-inner group-hover:rotate-12 transition-transform duration-300`}>
-                  <Icon className="w-6 h-6" />
+                <div className={`${stat.bgColor} ${stat.color} p-2 sm:p-2.5 lg:p-3.5 rounded-xl lg:rounded-2xl shadow-inner group-hover:rotate-12 transition-transform duration-300`}>
+                  <Icon className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" />
                 </div>
               </div>
-              <div className="flex items-center text-sm bg-white/50 w-fit px-2 py-1 rounded-lg border border-white/50">
-                {stat.trending === 'up' && <TrendingUp className="w-4 h-4 text-green-600 mr-1.5" />}
-                {stat.trending === 'down' && <TrendingDown className="w-4 h-4 text-red-600 mr-1.5" />}
-                <span className={`font-semibold ${stat.trending === 'up' ? 'text-green-600' : stat.trending === 'down' ? 'text-red-600' : 'text-gray-600'}`}>
+              <div className="hidden sm:flex items-center text-xs lg:text-sm bg-white/50 w-fit px-2 py-1 rounded-lg border border-white/50">
+                {stat.trending === 'up' && <TrendingUp className="w-3 h-3 lg:w-4 lg:h-4 text-green-600 mr-1" />}
+                {stat.trending === 'down' && <TrendingDown className="w-3 h-3 lg:w-4 lg:h-4 text-red-600 mr-1" />}
+                <span className={`font-semibold text-[10px] sm:text-xs lg:text-sm ${stat.trending === 'up' ? 'text-green-600' : stat.trending === 'down' ? 'text-red-600' : 'text-gray-600'}`}>
                   {stat.change}
                 </span>
               </div>
@@ -371,10 +374,10 @@ export default function AdminDashboardOverview() {
       </div>
 
       {/* Charts Row 1: Revenue Trend & Orders by Status */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 mb-6 lg:mb-8">
         {/* Revenue Trend Line Chart */}
-        <div className="lg:col-span-2 bg-white/70 backdrop-blur-xl rounded-3xl border border-white/60 shadow-lg shadow-gray-200/50 p-8">
-          <div className="flex items-center justify-between mb-8">
+        <div className="lg:col-span-2 bg-white/70 backdrop-blur-xl rounded-2xl lg:rounded-3xl border border-white/60 shadow-lg shadow-gray-200/50 p-4 sm:p-6 lg:p-8">
+          <div className="flex items-center justify-between mb-4 sm:mb-6 lg:mb-8">
             <h2 className="text-xl font-bold text-gray-900 flex items-center gap-3">
               <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600">
                  <TrendingUp className="w-5 h-5" />

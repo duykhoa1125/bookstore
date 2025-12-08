@@ -535,20 +535,34 @@ export default function Books() {
           </aside>
           
           {/* Main Content */}
-          <main className="lg:w-3/4">
+          <main className="flex-1 lg:w-3/4">
              {/* Controls Bar */}
-             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+             <div className="flex flex-wrap items-center justify-between gap-3 mb-6 bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-gray-100">
+                {/* Mobile Filter Button */}
+                <button
+                  onClick={() => setIsMobileFiltersOpen(true)}
+                  className="lg:hidden flex items-center gap-2 px-4 py-2.5 bg-slate-900 text-white rounded-xl font-medium shadow-md hover:bg-blue-600 transition-all"
+                >
+                  <SlidersHorizontal className="w-4 h-4" />
+                  <span>Filters</span>
+                  {(searchTerm || selectedCategory || minRating > 0 || priceRange[0] > 0 || priceRange[1] < 1000) && (
+                    <span className="w-5 h-5 bg-blue-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                      {[searchTerm, selectedCategory, minRating > 0, priceRange[0] > 0 || priceRange[1] < 1000].filter(Boolean).length}
+                    </span>
+                  )}
+                </button>
+
                 <div className="text-gray-600 text-sm">
                    Showing <span className="font-bold text-gray-900">{paginatedBooks.length}</span> of <span className="font-bold text-gray-900">{filteredBooks.length}</span> results
                 </div>
                 
-                <div className="flex items-center gap-3">
-                   <span className="text-sm font-medium text-gray-600">Sort by:</span>
+                <div className="flex items-center gap-2 sm:gap-3">
+                   <span className="hidden sm:inline text-sm font-medium text-gray-600">Sort by:</span>
                    <div className="relative">
                       <select
                         value={sortBy}
                         onChange={(e) => setSortBy(e.target.value)}
-                        className="appearance-none bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 pr-8 cursor-pointer font-medium"
+                        className="appearance-none bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2 sm:p-2.5 pr-8 cursor-pointer font-medium"
                       >
                          <option value="newest">Newest Arrivals</option>
                          <option value="price-asc">Price: Low to High</option>

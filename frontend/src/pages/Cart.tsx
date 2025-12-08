@@ -278,10 +278,10 @@ export default function Cart() {
           </div>
 
           {cart.items.map((item: any) => (
-            <div key={item.id} className={`group bg-white rounded-3xl p-6 shadow-sm border-2 transition-all duration-300 ${selectedItems.has(item.id) ? 'border-blue-200 bg-blue-50/30' : 'border-gray-100 hover:border-blue-100'} hover:shadow-lg relative overflow-hidden`}>
-              <div className="flex gap-6 items-start">
+            <div key={item.id} className={`group bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm border-2 transition-all duration-300 ${selectedItems.has(item.id) ? 'border-blue-200 bg-blue-50/30' : 'border-gray-100 hover:border-blue-100'} hover:shadow-lg relative overflow-hidden`}>
+              <div className="flex gap-3 sm:gap-6">
                 {/* Custom Checkbox */}
-                <div className="flex items-start pt-2">
+                <div className="flex items-start pt-1 sm:pt-2">
                   <label className="relative cursor-pointer">
                     <input
                       type="checkbox"
@@ -289,13 +289,13 @@ export default function Cart() {
                       onChange={() => toggleItemSelection(item.id)}
                       className="sr-only peer"
                     />
-                    <div className="w-6 h-6 border-2 border-gray-300 rounded-lg bg-white peer-checked:bg-blue-600 peer-checked:border-blue-600 peer-hover:border-blue-400 transition-all duration-200 flex items-center justify-center">
-                      <Check className={`w-4 h-4 text-white transition-all duration-200 ${selectedItems.has(item.id) ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}`} />
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-gray-300 rounded-lg bg-white peer-checked:bg-blue-600 peer-checked:border-blue-600 peer-hover:border-blue-400 transition-all duration-200 flex items-center justify-center">
+                      <Check className={`w-3 h-3 sm:w-4 sm:h-4 text-white transition-all duration-200 ${selectedItems.has(item.id) ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}`} />
                     </div>
                   </label>
                 </div>
 
-                <div className="relative w-32 aspect-[2/3] rounded-xl overflow-hidden shadow-md flex-shrink-0">
+                <div className="relative w-20 sm:w-32 aspect-[2/3] rounded-lg sm:rounded-xl overflow-hidden shadow-md flex-shrink-0">
                   {item.book.imageUrl ? (
                     <img
                       src={item.book.imageUrl}
@@ -304,55 +304,55 @@ export default function Cart() {
                     />
                   ) : (
                     <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                      <ShoppingBag className="w-8 h-8 text-gray-300" />
+                      <ShoppingBag className="w-6 h-6 sm:w-8 sm:h-8 text-gray-300" />
                     </div>
                   )}
                 </div>
                 
-                <div className="flex-grow flex flex-col justify-between min-h-[140px]">
+                <div className="flex-grow flex flex-col justify-between min-h-[100px] sm:min-h-[140px]">
                   <div>
-                     <div className="flex justify-between items-start">
+                     <div className="flex justify-between items-start gap-2">
                         <Link
                           to={`/books/${item.book.id}`}
-                          className="text-xl font-bold text-gray-900 hover:text-blue-600 transition-colors line-clamp-2"
+                          className="text-base sm:text-xl font-bold text-gray-900 hover:text-blue-600 transition-colors line-clamp-2"
                         >
                           {item.book.title}
                         </Link>
                         <button
                           onClick={() => handleRemoveItem(item.id)}
                           disabled={removeItemMutation.isPending}
-                          className="text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
+                          className="text-gray-400 hover:text-red-500 p-1.5 sm:p-2 rounded-full hover:bg-red-50 transition-all flex-shrink-0 sm:opacity-0 sm:group-hover:opacity-100"
                         >
-                          <Trash2 className="w-5 h-5" />
+                          <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
                         </button>
                      </div>
-                     <p className="text-gray-500 mt-1 font-medium">
+                     <p className="text-gray-500 mt-0.5 sm:mt-1 font-medium text-sm sm:text-base">
                        ${item.book.price.toFixed(2)}
                      </p>
                   </div>
 
-                  <div className="flex items-center justify-between mt-4">
-                    <div className="flex items-center gap-3 bg-gray-50 rounded-full p-1 border border-gray-200">
+                  <div className="flex items-center justify-between mt-3 sm:mt-4 flex-wrap gap-2 sm:gap-0">
+                    <div className="flex items-center gap-2 sm:gap-3 bg-gray-50 rounded-full p-0.5 sm:p-1 border border-gray-200">
                       <button
                         onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
                         disabled={item.quantity <= 1}
-                        className="w-8 h-8 flex items-center justify-center rounded-full bg-white shadow-sm text-gray-600 hover:text-blue-600 disabled:opacity-50 disabled:hover:text-gray-600 transition-all"
+                        className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full bg-white shadow-sm text-gray-600 hover:text-blue-600 disabled:opacity-50 disabled:hover:text-gray-600 transition-all"
                       >
-                        <Minus className="w-4 h-4" />
+                        <Minus className="w-3 h-3 sm:w-4 sm:h-4" />
                       </button>
-                      <span className="w-8 text-center font-bold text-gray-900">{item.quantity}</span>
+                      <span className="w-6 sm:w-8 text-center font-bold text-gray-900 text-sm sm:text-base">{item.quantity}</span>
                       <button
                         onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
                         disabled={item.quantity >= item.book.stock}
-                        className="w-8 h-8 flex items-center justify-center rounded-full bg-white shadow-sm text-gray-600 hover:text-blue-600 disabled:opacity-50 disabled:hover:text-gray-600 transition-all"
+                        className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full bg-white shadow-sm text-gray-600 hover:text-blue-600 disabled:opacity-50 disabled:hover:text-gray-600 transition-all"
                       >
-                        <Plus className="w-4 h-4" />
+                        <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
                       </button>
                     </div>
                     
                     <div className="text-right">
-                       <p className="text-sm text-gray-500">Subtotal</p>
-                       <p className={`text-xl font-bold ${selectedItems.has(item.id) ? 'text-blue-600' : 'text-gray-400'}`}>
+                       <p className="text-xs sm:text-sm text-gray-500">Subtotal</p>
+                       <p className={`text-lg sm:text-xl font-bold ${selectedItems.has(item.id) ? 'text-blue-600' : 'text-gray-400'}`}>
                          ${(item.book.price * item.quantity).toFixed(2)}
                        </p>
                     </div>
