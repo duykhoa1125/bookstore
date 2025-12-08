@@ -1,9 +1,16 @@
 import prisma from "../../config/database";
 import { CreateOrderInput } from "./order.dto";
+import { EmailUtil } from "../../utils/email.util";
 
 export class OrderService {
   async create(userId: string, data: CreateOrderInput) {
-    return await prisma.$transaction(async (tx) => {
+    // Get user info for email
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true, fullName: true },
+    });
+
+    const order = await prisma.$transaction(async (tx) => {
       const cart = await tx.cart.findUnique({
         where: { userId },
         include: { items: { include: { book: true } } },
@@ -103,6 +110,17 @@ export class OrderService {
 
       return order;
     });
+
+    // Send order confirmation email (async, don't await to not block response)
+    if (user?.email) {
+      EmailUtil.sendOrderConfirmationEmail(
+        user.email,
+        user.fullName,
+        order
+      ).catch(err => console.error('Failed to send order confirmation email:', err));
+    }
+
+    return order;
   }
 
   async findAll(userId: string) {

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { Package, Calendar, MapPin, CreditCard, CheckCircle, Clock, XCircle, Truck, ArrowRight, ShieldCheck } from 'lucide-react'
 import toast from 'react-hot-toast'
+import OrderTimeline from '../components/OrderTimeline'
 
 export default function OrderDetail() {
   const { id } = useParams<{ id: string }>()
@@ -184,6 +185,9 @@ export default function OrderDetail() {
 
         {/* Right Column: Info & Payment */}
         <div className="lg:col-span-1 space-y-6">
+          {/* Order Timeline */}
+          <OrderTimeline status={order.status} orderDate={order.orderDate} />
+
           {/* Payment Information */}
           <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden relative">
             <div className="absolute top-0 right-0 p-3 opacity-10">
