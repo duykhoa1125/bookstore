@@ -12,7 +12,10 @@ import {
   Check,
   ShieldCheck,
   Truck,
-  RotateCcw
+  RotateCcw,
+  Zap,
+  X,
+  ZoomIn
 } from "lucide-react";
 import { BookDetailSkeleton } from "../components/SkeletonLoaders";
 import { RelatedBooks } from "../components/RelatedBooks";
@@ -46,6 +49,8 @@ export default function BookDetail() {
   const [ratingStars, setRatingStars] = useState(0);
   const [ratingContent, setRatingContent] = useState("");
   const [hoverRating, setHoverRating] = useState(0);
+  const [isImageZoomed, setIsImageZoomed] = useState(false);
+  const [filterStars, setFilterStars] = useState<number | null>(null);
 
   const { data: bookData, isLoading } = useQuery({
     queryKey: ["book", id],
@@ -139,6 +144,23 @@ export default function BookDetail() {
     addToCartMutation.mutate(quantity);
   };
 
+  const handleBuyNow = async () => {
+    if (!isAuthenticated) {
+      toast.error("Please login to continue");
+      navigate("/login");
+      return;
+    }
+    try {
+      await api.addToCart({ bookId: id!, quantity });
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
+      toast.success("Proceeding to checkout...");
+      navigate("/cart");
+    } catch (error) {
+      const err = error as AxiosError<{ message?: string }>;
+      toast.error(err.response?.data?.message || "Failed to proceed to checkout");
+    }
+  };
+
   const handleSubmitRating = (e: React.FormEvent) => {
     e.preventDefault();
     if (!isAuthenticated) {
@@ -185,13 +207,37 @@ export default function BookDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-12">
+      {/* Image Zoom Modal */}
+      {isImageZoomed && book.imageUrl && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setIsImageZoomed(false)}
+        >
+          <button
+            onClick={() => setIsImageZoomed(false)}
+            className="absolute top-4 right-4 w-12 h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-colors"
+          >
+            <X className="w-6 h-6" />
+          </button>
+          <img
+            src={book.imageUrl}
+            alt={book.title}
+            className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
+
       {/* Product Section */}
       <div className="bg-white shadow-sm border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-12">
           <div className="lg:grid lg:grid-cols-2 lg:gap-x-12 xl:gap-x-16">
             {/* Image Gallery */}
             <div className="product-image-container mb-8 lg:mb-0 max-w-md mx-auto lg:mx-0">
-              <div className="aspect-[2/3] rounded-2xl overflow-hidden bg-gray-100 shadow-xl border border-gray-100 relative group">
+              <div 
+                className="aspect-[2/3] rounded-2xl overflow-hidden bg-gray-100 shadow-xl border border-gray-100 relative group cursor-zoom-in"
+                onClick={() => book.imageUrl && setIsImageZoomed(true)}
+              >
                 {book.imageUrl ? (
                   <img
                     src={book.imageUrl}
@@ -201,6 +247,12 @@ export default function BookDetail() {
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
                     <BookOpen className="h-24 w-24 text-gray-300" />
+                  </div>
+                )}
+                {/* Zoom Icon */}
+                {book.imageUrl && (
+                  <div className="absolute bottom-4 right-4 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                    <ZoomIn className="w-5 h-5 text-gray-700" />
                   </div>
                 )}
                 {/* Badges */}
@@ -269,7 +321,7 @@ export default function BookDetail() {
 
               {/* Buy Box */}
               <div className="mt-auto bg-gray-50 rounded-3xl p-6 sm:p-8 border border-gray-100 shadow-sm">
-                <div className="flex items-end justify-between mb-8">
+                <div className="flex items-end justify-between mb-4">
                   <div>
                     <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">Price</p>
                     <div className="flex items-baseline gap-3">
@@ -282,40 +334,70 @@ export default function BookDetail() {
                   </div>
                 </div>
 
+                {/* Stock Info & Warning */}
+                <div className="mb-6">
+                  {book.stock > 0 && (
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <span>Available: <strong className="text-gray-900">{book.stock}</strong> items</span>
+                    </div>
+                  )}
+                  {book.stock > 0 && book.stock < 10 && (
+                    <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-orange-50 border border-orange-200 rounded-xl">
+                      <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                      <span className="text-sm font-semibold text-orange-700">
+                        Only {book.stock} left in stock - order soon!
+                      </span>
+                    </div>
+                  )}
+                </div>
+
                 {/* Actions */}
-                <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                  {/* Quantity Selector */}
-                  <div className="flex items-center justify-between bg-white border border-gray-200 rounded-2xl h-14 px-2 shadow-sm min-w-[140px]">
+                <div className="flex flex-col gap-3 mb-8">
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    {/* Quantity Selector */}
+                    <div className="flex items-center justify-between bg-white border border-gray-200 rounded-2xl h-14 px-2 shadow-sm min-w-[140px]">
+                      <button
+                        onClick={() => handleQuantityChange('decrease')}
+                        disabled={quantity <= 1 || book.stock === 0}
+                        className="w-10 h-10 flex items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 hover:text-gray-900 disabled:opacity-30 transition-all"
+                      >
+                        <Minus className="w-4 h-4" />
+                      </button>
+                      <span className="text-lg font-bold text-gray-900 tabular-nums">{quantity}</span>
+                      <button
+                        onClick={() => handleQuantityChange('increase')}
+                        disabled={quantity >= book.stock || book.stock === 0}
+                        className="w-10 h-10 flex items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 hover:text-gray-900 disabled:opacity-30 transition-all"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Add to Cart */}
                     <button
-                      onClick={() => handleQuantityChange('decrease')}
-                      disabled={quantity <= 1 || book.stock === 0}
-                      className="w-10 h-10 flex items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 hover:text-gray-900 disabled:opacity-30 transition-all"
+                      onClick={handleAddToCart}
+                      disabled={book.stock === 0 || addToCartMutation.isPending}
+                      className={`flex-1 flex items-center justify-center gap-3 h-14 px-6 text-base font-bold text-white rounded-2xl shadow-lg transition-all transform active:scale-[0.98] ${
+                        book.stock > 0
+                          ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-blue-500/20"
+                          : "bg-gray-300 cursor-not-allowed shadow-none"
+                      }`}
                     >
-                      <Minus className="w-4 h-4" />
-                    </button>
-                    <span className="text-lg font-bold text-gray-900 tabular-nums">{quantity}</span>
-                    <button
-                      onClick={() => handleQuantityChange('increase')}
-                      disabled={quantity >= book.stock || book.stock === 0}
-                      className="w-10 h-10 flex items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 hover:text-gray-900 disabled:opacity-30 transition-all"
-                    >
-                      <Plus className="w-4 h-4" />
+                      <ShoppingCart className="w-5 h-5" />
+                      {book.stock > 0 ? "Add to Cart" : "Sold Out"}
                     </button>
                   </div>
 
-                  {/* Add to Cart */}
-                  <button
-                    onClick={handleAddToCart}
-                    disabled={book.stock === 0 || addToCartMutation.isPending}
-                    className={`flex-1 flex items-center justify-center gap-3 h-14 px-8 text-lg font-bold text-white rounded-2xl shadow-xl shadow-blue-500/20 transition-all transform active:scale-[0.98] ${
-                      book.stock > 0
-                        ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-                        : "bg-gray-300 cursor-not-allowed shadow-none"
-                    }`}
-                  >
-                    <ShoppingCart className="w-5 h-5" />
-                    {book.stock > 0 ? "Add to Cart" : "Sold Out"}
-                  </button>
+                  {/* Buy Now */}
+                  {book.stock > 0 && (
+                    <button
+                      onClick={handleBuyNow}
+                      className="flex items-center justify-center gap-3 h-14 px-8 text-base font-bold text-white rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-lg shadow-amber-500/20 transition-all transform active:scale-[0.98]"
+                    >
+                      <Zap className="w-5 h-5" />
+                      Buy Now
+                    </button>
+                  )}
                 </div>
 
                 {/* Trust Badges */}
@@ -353,7 +435,7 @@ export default function BookDetail() {
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 lg:sticky lg:top-24">
               <h3 className="text-xl font-bold text-gray-900 mb-6">Customer Reviews</h3>
               
-              <div className="flex items-center gap-4 mb-8">
+              <div className="flex items-center gap-4 mb-6">
                  <div className="text-5xl font-bold text-gray-900">{book.averageRating?.toFixed(1) || "0.0"}</div>
                  <div className="flex flex-col">
                     <div className="flex text-amber-400 mb-1">
@@ -371,6 +453,44 @@ export default function BookDetail() {
                     <span className="text-sm text-gray-500">{book.ratings?.length || 0} verified ratings</span>
                  </div>
               </div>
+
+              {/* Rating Distribution Chart */}
+              {(() => {
+                const ratings = ratingsData?.data || [];
+                const totalRatings = ratings.length;
+                const distribution = [5, 4, 3, 2, 1].map((star) => ({
+                  star,
+                  count: ratings.filter((r: BookRating) => r.stars === star).length,
+                }));
+
+                return (
+                  <div className="mb-6 pb-6 border-b border-gray-100">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3">Rating Distribution</h4>
+                    <div className="space-y-2">
+                      {distribution.map(({ star, count }) => {
+                        const percentage = totalRatings > 0 ? (count / totalRatings) * 100 : 0;
+                        return (
+                          <div key={star} className="flex items-center gap-2">
+                            <div className="flex items-center gap-1 w-12 text-sm text-gray-600">
+                              <span className="font-medium">{star}</span>
+                              <Star className="w-3.5 h-3.5 text-amber-400 fill-current" />
+                            </div>
+                            <div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full transition-all duration-500 ease-out"
+                                style={{ width: `${percentage}%` }}
+                              />
+                            </div>
+                            <span className="w-8 text-xs font-medium text-gray-500 text-right">
+                              {count}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Write Review Trigger */}
               <div className="border-t border-gray-100 pt-6">
@@ -457,87 +577,135 @@ export default function BookDetail() {
 
           {/* Reviews List */}
           <div className="lg:col-span-8">
-             <h3 className="text-lg font-bold text-gray-900 mb-6">Top Reviews</h3>
+             {/* Filter by Stars */}
+             <div className="flex items-center justify-between mb-6">
+               <h3 className="text-lg font-bold text-gray-900">Top Reviews</h3>
+               <div className="flex items-center gap-2">
+                 <span className="text-sm text-gray-500 mr-2">Filter:</span>
+                 <button
+                   onClick={() => setFilterStars(null)}
+                   className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-all ${
+                     filterStars === null
+                       ? "bg-blue-600 text-white shadow-md"
+                       : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                   }`}
+                 >
+                   All
+                 </button>
+                 {[5, 4, 3, 2, 1].map((star) => (
+                   <button
+                     key={star}
+                     onClick={() => setFilterStars(star)}
+                     className={`flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-full transition-all ${
+                       filterStars === star
+                         ? "bg-amber-500 text-white shadow-md"
+                         : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                     }`}
+                   >
+                     {star}
+                     <Star className="w-3 h-3 fill-current" />
+                   </button>
+                 ))}
+               </div>
+             </div>
              
              <div className="space-y-4">
-              {ratingsData?.data && ratingsData.data.length > 0 ? (
-                ratingsData.data.map((rating: BookRating) => (
-                  <div
-                    key={rating.id}
-                    className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm"
-                  >
-                    <div className="flex items-start justify-between mb-4">
-                       <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-full flex-shrink-0 overflow-hidden border border-gray-200 shadow-sm">
-                             {rating.user?.avatar ? (
-                               <img 
-                                 src={rating.user.avatar} 
-                                 alt={rating.user.fullName || "User"} 
-                                 className="w-full h-full object-cover"
-                               />
-                             ) : (
-                               <div className="w-full h-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold">
-                                 {rating.user?.fullName?.charAt(0).toUpperCase() || <UserIcon className="h-5 w-5" />}
-                               </div>
-                             )}
-                          </div>
-                          <div>
-                             <h4 className="font-bold text-gray-900 text-sm">
-                               {rating.user?.fullName || rating.user?.username || "Anonymous"}
-                             </h4>
-                             <div className="flex items-center text-xs text-gray-500">
-                               <Check className="w-3 h-3 text-green-500 mr-1" />
-                               Verified Purchase
-                             </div>
-                          </div>
-                       </div>
-                       <span className="text-xs text-gray-400 font-medium">
-                          {new Date(rating.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
-                       </span>
-                    </div>
-                    
-                    <div className="flex text-amber-400 mb-3">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Star
-                          key={star}
-                          className={`h-4 w-4 ${
-                            star <= rating.stars ? "fill-current" : "text-gray-200 fill-gray-200"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                    
-                    <p className="text-gray-600 text-sm leading-relaxed mb-4">
-                      {rating.content}
-                    </p>
+              {(() => {
+                const allRatings = ratingsData?.data || [];
+                const filteredRatings = filterStars
+                  ? allRatings.filter((r: BookRating) => r.stars === filterStars)
+                  : allRatings;
 
-                    {/* Vote Buttons */}
-                    <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                      <RatingVoteButtons
-                        ratingId={rating.id}
-                        initialUpvotes={rating.upvotes || 0}
-                        initialDownvotes={rating.downvotes || 0}
-                        initialUserVote={rating.userVote || null}
-                        disabled={!isAuthenticated || rating.userId === user?.id}
-                      />
-                      {!isAuthenticated && (
-                        <span className="text-xs text-gray-400">Sign in to vote</span>
-                      )}
-                      {isAuthenticated && rating.userId === user?.id && (
-                        <span className="text-xs text-gray-400">Can't vote on own review</span>
-                      )}
+                if (filteredRatings.length > 0) {
+                  return (
+                    <>
+                      {filteredRatings.map((rating: BookRating) => (
+                        <div
+                          key={rating.id}
+                          className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm"
+                        >
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                              <div className="h-10 w-10 rounded-full flex-shrink-0 overflow-hidden border border-gray-200 shadow-sm">
+                                {rating.user?.avatar ? (
+                                  <img 
+                                    src={rating.user.avatar} 
+                                    alt={rating.user.fullName || "User"} 
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold">
+                                    {rating.user?.fullName?.charAt(0).toUpperCase() || <UserIcon className="h-5 w-5" />}
+                                  </div>
+                                )}
+                              </div>
+                              <div>
+                                <h4 className="font-bold text-gray-900 text-sm">
+                                  {rating.user?.fullName || rating.user?.username || "Anonymous"}
+                                </h4>
+                                <div className="flex items-center text-xs text-gray-500">
+                                  <Check className="w-3 h-3 text-green-500 mr-1" />
+                                  Verified Purchase
+                                </div>
+                              </div>
+                            </div>
+                            <span className="text-xs text-gray-400 font-medium">
+                              {new Date(rating.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                            </span>
+                          </div>
+                          
+                          <div className="flex text-amber-400 mb-3">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star
+                                key={star}
+                                className={`h-4 w-4 ${
+                                  star <= rating.stars ? "fill-current" : "text-gray-200 fill-gray-200"
+                                }`}
+                              />
+                            ))}
+                          </div>
+                          
+                          <p className="text-gray-600 text-sm leading-relaxed mb-4">
+                            {rating.content}
+                          </p>
+
+                          {/* Vote Buttons */}
+                          <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                            <RatingVoteButtons
+                              ratingId={rating.id}
+                              initialUpvotes={rating.upvotes || 0}
+                              initialDownvotes={rating.downvotes || 0}
+                              initialUserVote={rating.userVote || null}
+                              disabled={!isAuthenticated || rating.userId === user?.id}
+                            />
+                            {!isAuthenticated && (
+                              <span className="text-xs text-gray-400">Sign in to vote</span>
+                            )}
+                            {isAuthenticated && rating.userId === user?.id && (
+                              <span className="text-xs text-gray-400">Can't vote on own review</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  );
+                }
+
+                // No reviews message
+                return (
+                  <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-gray-200">
+                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Star className="w-8 h-8 text-gray-300" />
                     </div>
+                    <h3 className="text-gray-900 font-medium mb-1">
+                      {filterStars ? `No ${filterStars}★ reviews yet` : "No reviews yet"}
+                    </h3>
+                    <p className="text-gray-500 text-sm">
+                      {filterStars ? "Try selecting a different star rating" : "Be the first to share your thoughts!"}
+                    </p>
                   </div>
-                ))
-              ) : (
-                <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-gray-200">
-                  <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                     <Star className="w-8 h-8 text-gray-300" />
-                  </div>
-                  <h3 className="text-gray-900 font-medium mb-1">No reviews yet</h3>
-                  <p className="text-gray-500 text-sm">Be the first to share your thoughts!</p>
-                </div>
-              )}
+                );
+              })()}
              </div>
           </div>
         </div>
