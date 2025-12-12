@@ -384,7 +384,7 @@ export default function Header() {
                     <ShoppingCart className="w-5 h-5 transition-transform group-hover:scale-110" />
                     {cartItemCount > 0 && (
                       <span className="absolute top-0.5 sm:top-1 right-0.5 sm:right-1 bg-gradient-to-r from-red-500 to-red-600 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center shadow-sm ring-2 ring-white">
-                        {cartItemCount > 9 ? '9+' : cartItemCount}
+                        {cartItemCount}
                       </span>
                     )}
                   </Link>

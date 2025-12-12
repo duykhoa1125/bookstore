@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
-import { Search, ChevronDown, X, Star, SlidersHorizontal, Tag, DollarSign, Sparkles } from 'lucide-react'
+import { Search, ChevronDown, X, Star, SlidersHorizontal, Tag, DollarSign, Sparkles, User } from 'lucide-react'
 import { BookCard } from '../components/BookCard'
 import { BookGridSkeleton } from '../components/SkeletonLoaders'
 import { QuickViewModal } from '../components/QuickViewModal'
@@ -57,10 +57,12 @@ export default function Books() {
   // URL Params State
   const urlSearch = searchParams.get('search') || ''
   const urlCategory = searchParams.get('categoryId') || ''
+  const urlAuthor = searchParams.get('authorId') || ''
   
   // Local State for Filters
   const [searchTerm, setSearchTerm] = useState(urlSearch)
   const [selectedCategory, setSelectedCategory] = useState<string>(urlCategory)
+  const [selectedAuthor, setSelectedAuthor] = useState<string>(urlAuthor)
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000])
   const [minRating, setMinRating] = useState<number>(0)
   const [sortBy, setSortBy] = useState<string>('newest') // newest, price-asc, price-desc, rating-desc
@@ -77,7 +79,8 @@ export default function Books() {
   useEffect(() => {
     setSearchTerm(urlSearch)
     setSelectedCategory(urlCategory)
-  }, [urlSearch, urlCategory])
+    setSelectedAuthor(urlAuthor)
+  }, [urlSearch, urlCategory, urlAuthor])
 
   // Fetch Data
   const { data: booksData, isLoading: booksLoading } = useQuery({
@@ -89,6 +92,12 @@ export default function Books() {
   const { data: categoriesData } = useQuery({
     queryKey: ['categories'],
     queryFn: () => api.getCategories(),
+    staleTime: 1000 * 60 * 60,
+  })
+
+  const { data: authorsData } = useQuery({
+    queryKey: ['authors'],
+    queryFn: () => api.getAuthors(),
     staleTime: 1000 * 60 * 60,
   })
 
@@ -143,6 +152,13 @@ export default function Books() {
       result = result.filter(book => book.categoryId === selectedCategory)
     }
 
+    // 2.5. Author
+    if (selectedAuthor) {
+      result = result.filter(book => 
+        book.authors?.some(a => a.author.id === selectedAuthor)
+      )
+    }
+
     // 3. Price Range (Client-side)
     result = result.filter(book => book.price >= priceRange[0] && book.price <= priceRange[1])
 
@@ -171,7 +187,7 @@ export default function Books() {
     }
 
     return result
-  }, [booksData, searchTerm, selectedCategory, priceRange, minRating, sortBy])
+  }, [booksData, searchTerm, selectedCategory, selectedAuthor, priceRange, minRating, sortBy])
 
   // Pagination Logic
   const totalPages = Math.ceil(filteredBooks.length / itemsPerPage)
@@ -230,7 +246,7 @@ export default function Books() {
                   </div>
 
                   {/* Active Filters Badges */}
-                  {(searchTerm || selectedCategory || minRating > 0 || priceRange[0] > 0 || priceRange[1] < 1000) && (
+                  {(searchTerm || selectedCategory || selectedAuthor || minRating > 0 || priceRange[0] > 0 || priceRange[1] < 1000) && (
                     <div className="px-5 py-3 bg-slate-50 border-b border-gray-100">
                       <div className="flex flex-wrap gap-2">
                         {searchTerm && (
@@ -251,6 +267,18 @@ export default function Books() {
                             {categoriesData?.data?.find(c => c.id === selectedCategory)?.name || 'Category'}
                             <button 
                               onClick={() => { setSelectedCategory(''); updateUrl('categoryId', '') }}
+                              className="ml-1 text-gray-400 hover:text-red-500 transition-colors"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </span>
+                        )}
+                        {selectedAuthor && (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full text-xs font-medium text-gray-700 shadow-sm border border-gray-100 group hover:border-red-200 transition-colors">
+                            <User className="w-3 h-3 text-emerald-500" />
+                            {authorsData?.data?.find(a => a.id === selectedAuthor)?.name || 'Author'}
+                            <button 
+                              onClick={() => { setSelectedAuthor(''); updateUrl('authorId', '') }}
                               className="ml-1 text-gray-400 hover:text-red-500 transition-colors"
                             >
                               <X className="w-3 h-3" />
@@ -386,6 +414,82 @@ export default function Books() {
                             />
                             <span className={`text-sm font-medium ${selectedCategory === cat.id ? 'text-white' : 'text-gray-700'}`}>
                               {cat.name}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </AccordionSection>
+
+                    {/* Authors Section */}
+                    <AccordionSection title="Authors" icon={<User className="w-4 h-4" />} defaultOpen={false}>
+                      <div className="space-y-1 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                        {/* All Authors Option */}
+                        <label 
+                          htmlFor="author-all"
+                          className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-200 group ${
+                            selectedAuthor === '' 
+                              ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/10' 
+                              : 'hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                            selectedAuthor === '' 
+                              ? 'border-white bg-white' 
+                              : 'border-gray-300 group-hover:border-emerald-400'
+                          }`}>
+                            {selectedAuthor === '' && (
+                              <div className="w-2.5 h-2.5 rounded-full bg-slate-900"></div>
+                            )}
+                          </div>
+                          <input
+                            type="radio"
+                            id="author-all"
+                            name="author"
+                            checked={selectedAuthor === ''}
+                            onChange={() => {
+                              setSelectedAuthor('')
+                              updateUrl('authorId', '')
+                            }}
+                            className="sr-only"
+                          />
+                          <span className={`text-sm font-medium ${selectedAuthor === '' ? 'text-white' : 'text-gray-700'}`}>
+                            All Authors
+                          </span>
+                          <Sparkles className={`w-4 h-4 ml-auto ${selectedAuthor === '' ? 'text-white/70' : 'text-gray-300'}`} />
+                        </label>
+
+                        {authorsData?.data?.map((author) => (
+                          <label 
+                            key={author.id}
+                            htmlFor={`author-${author.id}`}
+                            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-200 group ${
+                              selectedAuthor === author.id 
+                                ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/10' 
+                                : 'hover:bg-gray-50'
+                            }`}
+                          >
+                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                              selectedAuthor === author.id 
+                                ? 'border-white bg-white' 
+                                : 'border-gray-300 group-hover:border-emerald-400'
+                            }`}>
+                              {selectedAuthor === author.id && (
+                                <div className="w-2.5 h-2.5 rounded-full bg-slate-900"></div>
+                              )}
+                            </div>
+                            <input
+                              type="radio"
+                              id={`author-${author.id}`}
+                              name="author"
+                              checked={selectedAuthor === author.id}
+                              onChange={() => {
+                                setSelectedAuthor(author.id)
+                                updateUrl('authorId', author.id)
+                              }}
+                              className="sr-only"
+                            />
+                            <span className={`text-sm font-medium ${selectedAuthor === author.id ? 'text-white' : 'text-gray-700'}`}>
+                              {author.name}
                             </span>
                           </label>
                         ))}
@@ -535,10 +639,12 @@ export default function Books() {
                       onClick={() => {
                         setSearchTerm('')
                         setSelectedCategory('')
+                        setSelectedAuthor('')
                         setPriceRange([0, 1000])
                         setMinRating(0)
                         updateUrl('search', '')
                         updateUrl('categoryId', '')
+                        updateUrl('authorId', '')
                         setSortBy('newest')
                       }}
                       className="w-full py-3 text-sm font-semibold text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 group"
@@ -562,9 +668,9 @@ export default function Books() {
                 >
                   <SlidersHorizontal className="w-4 h-4" />
                   <span>Filters</span>
-                  {(searchTerm || selectedCategory || minRating > 0 || priceRange[0] > 0 || priceRange[1] < 1000) && (
+                  {(searchTerm || selectedCategory || selectedAuthor || minRating > 0 || priceRange[0] > 0 || priceRange[1] < 1000) && (
                     <span className="w-5 h-5 bg-blue-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                      {[searchTerm, selectedCategory, minRating > 0, priceRange[0] > 0 || priceRange[1] < 1000].filter(Boolean).length}
+                      {[searchTerm, selectedCategory, selectedAuthor, minRating > 0, priceRange[0] > 0 || priceRange[1] < 1000].filter(Boolean).length}
                     </span>
                   )}
                 </button>

@@ -1,0 +1,213 @@
+.server-waking-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1e3a5f 0%, #0d1b2a 50%, #1b263b 100%);
+  animation: gradientShift 10s ease infinite;
+  background-size: 200% 200%;
+}
+
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.server-waking-content {
+  text-align: center;
+  padding: 2rem;
+  max-width: 450px;
+}
+
+/* Book Loader Animation */
+.book-loader {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.book {
+  position: relative;
+  width: 80px;
+  height: 60px;
+  perspective: 400px;
+}
+
+.book-cover {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  border-radius: 4px 8px 8px 4px;
+  box-shadow: 
+    -2px 0 0 rgba(0, 0, 0, 0.2),
+    0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.book-page {
+  position: absolute;
+  width: 90%;
+  height: 90%;
+  left: 5%;
+  top: 5%;
+  background: linear-gradient(90deg, #fef3c7 0%, #fde68a 100%);
+  border-radius: 0 4px 4px 0;
+  transform-origin: left center;
+  animation: flipPage 1.5s ease-in-out infinite;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.book-page:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.book-page:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.book-page:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes flipPage {
+  0%, 100% {
+    transform: rotateY(0deg);
+  }
+  50% {
+    transform: rotateY(-30deg);
+  }
+}
+
+/* Title */
+.server-waking-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 1rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Message */
+.server-waking-message {
+  color: #94a3b8;
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+
+.server-waking-note {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-style: italic;
+}
+
+/* Progress Section */
+.server-waking-progress-section {
+  margin-bottom: 1.5rem;
+}
+
+.server-waking-progress-container {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.server-waking-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #f59e0b 0%, #eab308 50%, #fbbf24 100%);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+  animation: progressPulse 2s ease-in-out infinite;
+}
+
+@keyframes progressPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Time Display */
+.server-waking-time {
+  color: #cbd5e1;
+  font-size: 0.95rem;
+  margin-bottom: 0.5rem;
+}
+
+.server-waking-countdown {
+  font-weight: 700;
+  color: #fbbf24;
+  font-size: 1.1rem;
+}
+
+/* Retry Count */
+.server-waking-retry {
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+/* Retry Button */
+.server-waking-retry-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.875rem 2rem;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 1rem;
+  border: none;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+}
+
+.server-waking-retry-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5);
+}
+
+.server-waking-retry-btn:active {
+  transform: translateY(0);
+}
+
+/* Tips */
+.server-waking-tips {
+  margin-top: 2rem;
+}
+
+.server-waking-tip {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  color: #94a3b8;
+  font-size: 0.875rem;
+  backdrop-filter: blur(10px);
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .server-waking-content {
+    padding: 1.5rem;
+  }
+
+  .server-waking-title {
+    font-size: 1.5rem;
+  }
+
+  .server-waking-message {
+    font-size: 0.9rem;
+  }
+
+  .book {
+    width: 60px;
+    height: 45px;
+  }
+}
