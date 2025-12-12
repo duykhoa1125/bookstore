@@ -5,9 +5,11 @@ import { api } from '../lib/api'
 import { Search, ChevronDown, X, Star, SlidersHorizontal, Tag, DollarSign, Sparkles } from 'lucide-react'
 import { BookCard } from '../components/BookCard'
 import { BookGridSkeleton } from '../components/SkeletonLoaders'
+import { QuickViewModal } from '../components/QuickViewModal'
 import Pagination from '../components/Pagination'
 import toast from 'react-hot-toast'
 import { useAuth } from '../contexts/AuthContext'
+import { Book } from '../types'
 
 // Accordion Section Component
 interface AccordionSectionProps {
@@ -66,6 +68,10 @@ export default function Books() {
   const itemsPerPage = 8
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false)
   const [hoverRating, setHoverRating] = useState<number>(0)
+  
+  // Quick View Modal state
+  const [quickViewBook, setQuickViewBook] = useState<Book | null>(null)
+  const [isQuickViewOpen, setIsQuickViewOpen] = useState(false)
 
   // Sync state with URL
   useEffect(() => {
@@ -105,6 +111,17 @@ export default function Books() {
       return
     }
     addToCartMutation.mutate(bookId)
+  }
+
+  // Quick View Handler
+  const handleQuickView = (book: Book) => {
+    setQuickViewBook(book)
+    setIsQuickViewOpen(true)
+  }
+
+  const handleCloseQuickView = () => {
+    setIsQuickViewOpen(false)
+    setTimeout(() => setQuickViewBook(null), 300) // Clear after animation
   }
 
   // Filter & Sort Logic
@@ -586,6 +603,7 @@ export default function Books() {
                         book={book} 
                         onAddToCart={handleAddToCart}
                         isAddingToCart={addToCartMutation.isPending}
+                        onQuickView={handleQuickView}
                       />
                     ))}
                   </div>
@@ -628,6 +646,15 @@ export default function Books() {
           </main>
         </div>
       </div>
+
+      {/* Quick View Modal */}
+      <QuickViewModal
+        book={quickViewBook}
+        isOpen={isQuickViewOpen}
+        onClose={handleCloseQuickView}
+        onAddToCart={handleAddToCart}
+        isAddingToCart={addToCartMutation.isPending}
+      />
     </div>
   )
 }
