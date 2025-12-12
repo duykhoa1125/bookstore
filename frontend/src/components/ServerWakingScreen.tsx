@@ -5,8 +5,11 @@ export default function ServerWakingScreen() {
   const { isBackendReady, isChecking, retryCount, estimatedWaitTime, error } =
     useBackendHealth();
 
-  // Don't render if backend is ready
-  if (isBackendReady) {
+  // Check for test mode via URL param: ?forceLoading=true
+  const isTestMode = new URLSearchParams(window.location.search).get('forceLoading') === 'true';
+
+  // Don't render if backend is ready (unless in test mode)
+  if (isBackendReady && !isTestMode) {
     return null;
   }
 
@@ -46,7 +49,7 @@ export default function ServerWakingScreen() {
         </p>
 
         {/* Progress Section */}
-        {!error && isChecking && (
+        {!error && (isChecking || isTestMode) && (
           <div className="server-waking-progress-section">
             {/* Progress Bar */}
             <div className="server-waking-progress-container">

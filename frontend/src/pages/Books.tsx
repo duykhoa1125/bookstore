@@ -642,10 +642,14 @@ export default function Books() {
                         setSelectedAuthor('')
                         setPriceRange([0, 1000])
                         setMinRating(0)
-                        updateUrl('search', '')
-                        updateUrl('categoryId', '')
-                        updateUrl('authorId', '')
                         setSortBy('newest')
+                        setSearchParams(prev => {
+                          prev.delete('search')
+                          prev.delete('categoryId')
+                          prev.delete('authorId')
+                          return prev
+                        })
+                        setCurrentPage(1)
                       }}
                       className="w-full py-3 text-sm font-semibold text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 group"
                     >
@@ -739,9 +743,17 @@ export default function Books() {
                      onClick={() => {
                         setSearchTerm('')
                         setSelectedCategory('')
+                        setSelectedAuthor('')
                         setPriceRange([0, 1000])
                         setMinRating(0)
                         setSortBy('newest')
+                        setSearchParams(prev => {
+                          prev.delete('search')
+                          prev.delete('categoryId')
+                          prev.delete('authorId')
+                          return prev
+                        })
+                        setCurrentPage(1)
                      }}
                      className="px-6 py-2.5 bg-blue-600 text-white rounded-full font-bold hover:bg-blue-700 transition"
                    >
