@@ -1,672 +1,280 @@
-# 🚀 CI/CD Guide - Bookstore Project
+# 📚 Hướng Dẫn CI/CD - Bookstore
 
-## Hướng dẫn CI/CD với GitHub Actions cho người mới bắt đầu
+## Tổng Quan Kiến Trúc
 
----
+Dự án **Bookstore** đã được deploy với kiến trúc sau:
 
-## 📚 Mục lục
-
-1. [CI/CD là gì?](#cicd-là-gì)
-2. [Kiến trúc Deploy hiện tại](#kiến-trúc-deploy-hiện-tại)
-3. [GitHub Actions cơ bản](#github-actions-cơ-bản)
-4. [Thiết lập CI/CD cho Frontend (Vercel)](#thiết-lập-cicd-cho-frontend-vercel)
-5. [Thiết lập CI/CD cho Backend (Render)](#thiết-lập-cicd-cho-backend-render)
-6. [Workflow hoàn chỉnh](#workflow-hoàn-chỉnh)
-7. [Best Practices](#best-practices)
-8. [Troubleshooting](#troubleshooting)
-
----
-
-## 🎯 CI/CD là gì?
-
-### CI - Continuous Integration (Tích hợp liên tục)
-- **Tự động hóa** việc kiểm tra code mỗi khi push lên GitHub
-- Chạy **tests**, **linting**, **type checking**
-- Phát hiện lỗi **sớm** trước khi merge
-
-### CD - Continuous Deployment (Triển khai liên tục)
-- **Tự động deploy** khi code được merge vào branch chính
-- Không cần deploy thủ công
-- Đảm bảo **production luôn cập nhật**
-
-### Luồng hoạt động
+| Thành Phần | Nền Tảng | URL |
+|------------|----------|-----|
+| **Frontend** | Vercel | `https://your-frontend.vercel.app` |
+| **Backend** | Render | `https://your-backend.onrender.com` |
+| **Database** | Neon | PostgreSQL Serverless |
 
 ```
-Developer → Push Code → GitHub
-                          ↓
-                    GitHub Actions
-                          ↓
-              ┌──────────┴──────────┐
-              ↓                     ↓
-         Run Tests              Build App
-              ↓                     ↓
-         Pass? ────No────→ ❌ Notify Developer
-              │
-             Yes
-              ↓
-         Deploy to Production
-              ↓
-         ✅ Live on Vercel/Render
+┌─────────────────────────────────────────────────────────────────┐
+│                        GitHub Repository                         │
+│                                                                   │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐          │
+│  │   Frontend  │    │   Backend   │    │  Prisma     │          │
+│  │   (React)   │    │  (Express)  │    │  Schema     │          │
+│  └──────┬──────┘    └──────┬──────┘    └──────┬──────┘          │
+└─────────┼───────────────────┼──────────────────┼─────────────────┘
+          │                   │                  │
+          │ Auto Deploy       │ Auto Deploy      │ Connected
+          ▼                   ▼                  ▼
+   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
+   │   VERCEL     │   │   RENDER     │   │    NEON      │
+   │   ✅ Live    │   │   ✅ Live    │   │   ✅ Live    │
+   └──────────────┘   └──────────────┘   └──────────────┘
 ```
 
 ---
 
-## 🏗️ Kiến trúc Deploy hiện tại
+## 🔄 Cách Deploy Hoạt Động (Đã Cấu Hình)
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        GITHUB REPOSITORY                      │
-│                    github.com/your-username/bookstore         │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              │ Push/Merge
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                      GITHUB ACTIONS                          │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
-│  │   Lint      │→ │   Test      │→ │  Build & Deploy     │  │
-│  │   Check     │  │   (future)  │  │                     │  │
-│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-                              │
-          ┌───────────────────┴───────────────────┐
-          ▼                                       ▼
-┌─────────────────────┐               ┌─────────────────────┐
-│      VERCEL         │               │      RENDER         │
-│   (Frontend)        │               │   (Backend)         │
-│                     │               │                     │
-│  - React + Vite     │               │  - Express + Prisma │
-│  - Static hosting   │               │  - PostgreSQL       │
-│  - Auto SSL         │               │  - Auto scaling     │
-│  - CDN              │               │                     │
-│                     │    API Call   │                     │
-│  bookstore.vercel   │◄─────────────►│  api.render.com     │
-│     .app            │               │                     │
-└─────────────────────┘               └─────────────────────┘
-                                               │
-                                               ▼
-                                      ┌─────────────────┐
-                                      │   DATABASE      │
-                                      │  (PostgreSQL)   │
-                                      │  Neon/Supabase  │
-                                      └─────────────────┘
-```
+### Frontend → Vercel
+- **Trigger**: Push code lên `main` branch
+- **Auto**: Vercel tự động build & deploy
+- **Preview**: Mỗi Pull Request tạo preview URL riêng
+
+### Backend → Render  
+- **Trigger**: Push code lên `main` branch
+- **Auto**: Render tự động build & deploy
+- **Build Command**: `npm install && npm run prebuild && npm run build`
+- **Start Command**: `npm run start`
+
+### Database → Neon
+- **Serverless**: Không cần deploy, auto-scale
+- **Migrations**: Chạy qua `prisma migrate deploy` (trong prebuild của Render)
 
 ---
 
-## ⚙️ GitHub Actions cơ bản
+## 🛡️ CI Nhẹ Với GitHub Actions (Khuyên Dùng)
 
-### Cấu trúc thư mục
-```
-bookstore/
-├── .github/
-│   └── workflows/
-│       ├── ci.yml           # Chạy tests & linting
-│       ├── frontend.yml     # Deploy frontend
-│       └── backend.yml      # Deploy backend
-├── frontend/
-└── backend/
-```
+Thêm CI để kiểm tra code quality trước khi merge, **KHÔNG** thay thế auto-deploy.
 
-### Cấu trúc file workflow (.yml)
+### Mục Đích
+- ✅ Chạy lint & type check trên mỗi Pull Request
+- ✅ Block merge nếu code có lỗi
+- ✅ Validate Prisma schema khi thay đổi
+- ❌ **KHÔNG** deploy (Vercel/Render tự làm)
+
+### File: `.github/workflows/ci.yml`
 
 ```yaml
-name: Workflow Name           # Tên hiển thị
-
-on:                           # Khi nào chạy?
-  push:
-    branches: [main]          # Push vào main
-  pull_request:
-    branches: [main]          # PR vào main
-
-jobs:
-  job-name:                   # Tên job
-    runs-on: ubuntu-latest    # Môi trường
-    
-    steps:                    # Các bước thực hiện
-      - name: Step 1
-        uses: actions/checkout@v4   # Dùng action có sẵn
-        
-      - name: Step 2
-        run: npm install            # Chạy command
-```
-
-### Các khái niệm quan trọng
-
-| Khái niệm | Giải thích |
-|-----------|------------|
-| **Workflow** | File .yml định nghĩa pipeline |
-| **Event** | Sự kiện trigger (push, PR, schedule) |
-| **Job** | Nhóm các bước chạy trên 1 runner |
-| **Step** | Hành động đơn lẻ trong job |
-| **Action** | Script tái sử dụng (actions/checkout) |
-| **Runner** | Máy ảo chạy workflow |
-| **Secrets** | Biến môi trường bí mật |
-
----
-
-## 🌐 Thiết lập CI/CD cho Frontend (Vercel)
-
-### Cách 1: Vercel Auto-Deploy (Đơn giản nhất)
-
-Vercel **tự động** deploy khi push lên GitHub. Bạn chỉ cần:
-
-1. **Connect GitHub repo với Vercel:**
-   - Vercel Dashboard → Add New Project
-   - Import từ GitHub
-   - Chọn thư mục `frontend`
-   - Deploy!
-
-2. **Cấu hình trong Vercel Dashboard:**
-   - Build Command: `npm run build`
-   - Output Directory: `dist`
-   - Root Directory: `frontend`
-
-### Cách 2: GitHub Actions + Vercel CLI (Kiểm soát nhiều hơn)
-
-Tạo file `.github/workflows/frontend.yml`:
-
-```yaml
-name: Frontend CI/CD
+name: CI Checks
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'frontend/**'      # Chỉ chạy khi frontend thay đổi
   pull_request:
     branches: [main]
-    paths:
-      - 'frontend/**'
+  push:
+    branches: [main]
 
 env:
-  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+  NODE_VERSION: '20'
 
 jobs:
-  # ============================================
-  # JOB 1: LINT & TYPE CHECK
-  # ============================================
-  lint:
-    name: 🔍 Lint & Type Check
+  # ========================================
+  # Detect what changed
+  # ========================================
+  changes:
+    name: 🔍 Detect Changes
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
-    
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.filter.outputs.backend }}
     steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-      
-      - name: 📦 Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
         with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
-      
-      - name: 📥 Install dependencies
-        run: npm ci
-      
-      - name: 🔍 Run ESLint
-        run: npm run lint
-      
-      - name: 🔍 TypeScript Check
-        run: npx tsc --noEmit
+          filters: |
+            frontend:
+              - 'frontend/**'
+            backend:
+              - 'backend/**'
 
-  # ============================================
-  # JOB 2: BUILD
-  # ============================================
-  build:
-    name: 🏗️ Build
-    runs-on: ubuntu-latest
-    needs: lint              # Chạy sau lint thành công
-    defaults:
-      run:
-        working-directory: frontend
-    
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-      
-      - name: 📦 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
-      
-      - name: 📥 Install dependencies
-        run: npm ci
-      
-      - name: 🏗️ Build application
-        run: npm run build
-        env:
-          VITE_API_URL: ${{ secrets.VITE_API_URL }}
-          VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
-      
-      - name: 📤 Upload build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-build
-          path: frontend/dist
-
-  # ============================================
-  # JOB 3: DEPLOY TO VERCEL
-  # ============================================
-  deploy:
-    name: 🚀 Deploy to Vercel
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.ref == 'refs/heads/main'   # Chỉ deploy khi merge vào main
-    
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-      
-      - name: 📦 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      
-      - name: 📥 Install Vercel CLI
-        run: npm install -g vercel@latest
-      
-      - name: 🔗 Pull Vercel Environment
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-        working-directory: frontend
-      
-      - name: 🏗️ Build with Vercel
-        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
-        working-directory: frontend
-      
-      - name: 🚀 Deploy to Vercel
-        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
-        working-directory: frontend
-```
-
-### Lấy Vercel Secrets
-
-1. **VERCEL_TOKEN:**
-   - Vercel Dashboard → Settings → Tokens → Create
-
-2. **VERCEL_ORG_ID & VERCEL_PROJECT_ID:**
-   ```bash
-   cd frontend
-   vercel link    # Sẽ tạo file .vercel/project.json
-   cat .vercel/project.json
-   # {"orgId": "xxx", "projectId": "yyy"}
-   ```
-
-3. **Thêm vào GitHub Secrets:**
-   - GitHub Repo → Settings → Secrets and variables → Actions
-   - Add: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`
-
----
-
-## 🖥️ Thiết lập CI/CD cho Backend (Render)
-
-### Cách 1: Render Auto-Deploy (Đơn giản nhất)
-
-1. **Connect GitHub với Render:**
-   - Render Dashboard → New → Web Service
-   - Connect GitHub repo
-   - Root Directory: `backend`
-   
-2. **Build & Start Commands:**
-   ```
-   Build: npm install && npm run build
-   Start: npm run start
-   ```
-
-3. **Environment Variables trong Render:**
-   ```
-   DATABASE_URL=postgresql://...
-   DIRECT_URL=postgresql://...
-   JWT_SECRET=your-secret
-   CORS_ORIGIN=https://your-frontend.vercel.app
-   ```
-
-### Cách 2: GitHub Actions + Render Deploy Hook
-
-Tạo file `.github/workflows/backend.yml`:
-
-```yaml
-name: Backend CI/CD
-
-on:
-  push:
-    branches: [main]
-    paths:
-      - 'backend/**'
-  pull_request:
-    branches: [main]
-    paths:
-      - 'backend/**'
-
-jobs:
-  # ============================================
-  # JOB 1: LINT & TYPE CHECK
-  # ============================================
-  lint:
-    name: 🔍 Lint & Type Check
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
-    
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-      
-      - name: 📦 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: backend/package-lock.json
-      
-      - name: 📥 Install dependencies
-        run: npm ci
-      
-      - name: 📥 Generate Prisma Client
-        run: npx prisma generate
-      
-      - name: 🔍 TypeScript Check
-        run: npx tsc --noEmit
-
-  # ============================================
-  # JOB 2: BUILD
-  # ============================================
-  build:
-    name: 🏗️ Build
-    runs-on: ubuntu-latest
-    needs: lint
-    defaults:
-      run:
-        working-directory: backend
-    
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-      
-      - name: 📦 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: backend/package-lock.json
-      
-      - name: 📥 Install dependencies
-        run: npm ci
-      
-      - name: 📥 Generate Prisma Client
-        run: npx prisma generate
-      
-      - name: 🏗️ Build application
-        run: npm run build
-
-  # ============================================
-  # JOB 3: DEPLOY TO RENDER
-  # ============================================
-  deploy:
-    name: 🚀 Deploy to Render
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.ref == 'refs/heads/main'
-    
-    steps:
-      - name: 🚀 Trigger Render Deploy
-        run: |
-          curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
-```
-
-### Lấy Render Deploy Hook
-
-1. Render Dashboard → Your Service → Settings
-2. Scroll xuống "Deploy Hook"
-3. Copy URL
-4. Thêm vào GitHub Secrets: `RENDER_DEPLOY_HOOK`
-
----
-
-## 📋 Workflow hoàn chỉnh
-
-Tạo file `.github/workflows/ci.yml` cho kiểm tra tổng thể:
-
-```yaml
-name: CI Pipeline
-
-on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main]
-
-jobs:
-  # ============================================
-  # FRONTEND CHECKS
-  # ============================================
+  # ========================================
+  # Frontend: Lint & Type Check
+  # ========================================
   frontend:
-    name: 🌐 Frontend
+    name: 🎨 Frontend Check
     runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
     defaults:
       run:
         working-directory: frontend
-    
     steps:
       - uses: actions/checkout@v4
       
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
-      
-      - name: Install
+
+      - name: Install dependencies
         run: npm ci
-      
-      - name: Lint
+
+      - name: 🔍 ESLint
         run: npm run lint
-      
-      - name: Type Check
+        continue-on-error: true
+
+      - name: 🔍 TypeScript Check
         run: npx tsc --noEmit
-      
-      - name: Build
+
+      - name: 🔨 Build Check
         run: npm run build
         env:
-          VITE_API_URL: https://api.example.com
+          VITE_API_URL: https://example.com/api
+          VITE_GOOGLE_CLIENT_ID: test
 
-  # ============================================
-  # BACKEND CHECKS
-  # ============================================
+  # ========================================
+  # Backend: Lint & Type Check
+  # ========================================
   backend:
-    name: 🖥️ Backend
+    name: ⚙️ Backend Check
     runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     defaults:
       run:
         working-directory: backend
-    
     steps:
       - uses: actions/checkout@v4
       
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
           cache-dependency-path: backend/package-lock.json
-      
-      - name: Install
+
+      - name: Install dependencies
         run: npm ci
-      
-      - name: Generate Prisma
+
+      - name: Generate Prisma Client
         run: npx prisma generate
-      
-      - name: Type Check
+
+      - name: 🔍 TypeScript Check
         run: npx tsc --noEmit
-      
-      - name: Build
+
+      - name: 🔨 Build Check
         run: npm run build
-
-  # ============================================
-  # FINAL STATUS CHECK
-  # ============================================
-  ci-success:
-    name: ✅ CI Success
-    runs-on: ubuntu-latest
-    needs: [frontend, backend]
-    steps:
-      - name: All checks passed
-        run: echo "🎉 All CI checks passed!"
 ```
 
 ---
 
-## 🛠️ Thiết lập GitHub Secrets
+## 🌿 Git Branching Strategy
 
-Vào GitHub Repo → Settings → Secrets and variables → Actions
-
-### Frontend Secrets
-| Secret Name | Mô tả | Ví dụ |
-|-------------|-------|-------|
-| `VERCEL_TOKEN` | Token API từ Vercel | `xxx` |
-| `VERCEL_ORG_ID` | Org ID từ .vercel/project.json | `team_xxx` |
-| `VERCEL_PROJECT_ID` | Project ID | `prj_xxx` |
-| `VITE_API_URL` | URL backend API | `https://api.render.com` |
-| `VITE_GOOGLE_CLIENT_ID` | Google OAuth Client ID | `xxx.apps.googleusercontent.com` |
-
-### Backend Secrets
-| Secret Name | Mô tả | Ví dụ |
-|-------------|-------|-------|
-| `RENDER_DEPLOY_HOOK` | Webhook URL từ Render | `https://api.render.com/deploy/xxx` |
-| `DATABASE_URL` | PostgreSQL connection string (nếu cần) | `postgresql://...` |
-
----
-
-## 📊 Best Practices
-
-### 1. Branch Protection Rules
 ```
-GitHub → Settings → Branches → Add rule → main
-
-✅ Require a pull request before merging
-✅ Require status checks to pass before merging
-   - Select: CI Pipeline / frontend
-   - Select: CI Pipeline / backend
-✅ Require branches to be up to date before merging
+main ─────────────────────────────────────────────► Production (Auto Deploy)
+  │
+  └── feature/new-feature ────────────────────────► Development
+        │
+        └── Pull Request → CI Check → Merge → Auto Deploy
 ```
 
-### 2. Commit Message Convention
+### Workflow Đơn Giản
+
 ```bash
-# Format
-<type>(<scope>): <description>
+# 1. Tạo branch mới
+git checkout main
+git pull origin main
+git checkout -b feature/new-feature
 
-# Examples
-feat(auth): add Google OAuth login
-fix(cart): resolve quantity update bug
-docs(readme): update installation guide
-chore(deps): update React to v18.2.1
-```
+# 2. Code và commit
+git add .
+git commit -m "feat: add new feature"
 
-### 3. Git Flow
-```
-main          ●────●────●────●────●  (Production)
-              ▲         ▲
-develop      ●────●────●────●────●  (Staging)
-              ▲    ▲
-feature/*    ●────●    ●────●       (Feature branches)
+# 3. Push và tạo Pull Request
+git push origin feature/new-feature
+
+# 4. CI chạy tự động, review, merge
+# 5. Vercel/Render auto deploy sau khi merge
 ```
 
-### 4. Environment Strategy
+### Conventional Commits
+
 ```
-┌─────────────┬───────────────┬──────────────────┐
-│ Branch      │ Environment   │ Deploy Target    │
-├─────────────┼───────────────┼──────────────────┤
-│ main        │ Production    │ vercel.app       │
-│ develop     │ Staging       │ preview.vercel   │
-│ feature/*   │ Preview       │ PR Preview       │
-└─────────────┴───────────────┴──────────────────┘
+feat: thêm tính năng mới
+fix: sửa lỗi
+docs: cập nhật tài liệu
+style: format code
+refactor: tái cấu trúc code
+chore: công việc maintenance
 ```
+
+---
+
+## ⚙️ Environment Variables
+
+### Vercel (Frontend)
+
+| Variable | Mô tả |
+|----------|-------|
+| `VITE_API_URL` | URL backend API |
+| `VITE_GOOGLE_CLIENT_ID` | Google OAuth Client ID |
+
+### Render (Backend)
+
+| Variable | Mô tả |
+|----------|-------|
+| `DATABASE_URL` | Neon connection string |
+| `JWT_SECRET` | Secret key cho JWT |
+| `JWT_EXPIRES_IN` | Token expiration (e.g., `7d`) |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary config |
+| `CLOUDINARY_API_KEY` | Cloudinary API key |
+| `CLOUDINARY_API_SECRET` | Cloudinary secret |
+| `RESEND_API_KEY` | Email service key |
+| `GOOGLE_CLIENT_ID` | Google OAuth |
+| `FRONTEND_URL` | Frontend URL (CORS) |
+| `NODE_ENV` | `production` |
+| `PORT` | `10000` |
 
 ---
 
 ## 🔧 Troubleshooting
 
-### Lỗi thường gặp
+### Frontend (Vercel)
 
-#### 1. "npm ci" failed
-```yaml
-# Ensure package-lock.json exists and is committed
-steps:
-  - run: npm ci
-    # NOT: npm install
-```
+| Vấn đề | Giải pháp |
+|--------|-----------|
+| Build failed | Kiểm tra Vercel logs, chạy `npm run build` local |
+| API không kết nối | Kiểm tra `VITE_API_URL` trong Vercel settings |
 
-#### 2. Prisma Generate fails
-```yaml
-# Generate Prisma client before other steps
-- run: npx prisma generate
-  env:
-    DATABASE_URL: ${{ secrets.DATABASE_URL }}
-```
+### Backend (Render)
 
-#### 3. Build fails on type errors
-```yaml
-# Check locally first
-- run: npx tsc --noEmit
-```
+| Vấn đề | Giải pháp |
+|--------|-----------|
+| Deploy failed | Kiểm tra Render logs |
+| Database connection | Kiểm tra `DATABASE_URL`, thêm `?sslmode=require` |
+| Cold start chậm | Neon hibernates sau 5 phút idle (free tier) |
 
-#### 4. CORS issues after deploy
-```bash
-# Backend .env
-CORS_ORIGIN=https://your-frontend.vercel.app
+### Database (Neon)
 
-# Không dùng trailing slash!
-# ❌ https://your-frontend.vercel.app/
-# ✅ https://your-frontend.vercel.app
-```
-
-#### 5. Database migrations not running
-```yaml
-# Add to Render build command
-npm install && npx prisma migrate deploy && npm run build
-```
-
-### Debug Workflow
-
-```yaml
-# Thêm step debug
-- name: Debug
-  run: |
-    echo "Current directory: $(pwd)"
-    echo "Files: $(ls -la)"
-    echo "Node version: $(node -v)"
-    echo "NPM version: $(npm -v)"
-```
+| Vấn đề | Giải pháp |
+|--------|-----------|
+| Connection timeout | Database đang wake up, thử lại |
+| Migration failed | Chạy `npx prisma migrate deploy` manual |
 
 ---
 
-## 📚 Tài liệu tham khảo
+## 📋 Checklist Deploy Mới
 
-- [GitHub Actions Documentation](https://docs.github.com/en/actions)
-- [Vercel CLI Documentation](https://vercel.com/docs/cli)
-- [Render Deploy Hooks](https://render.com/docs/deploy-hooks)
-- [Prisma Deployment Guide](https://www.prisma.io/docs/guides/deployment)
+Khi setup project mới hoặc environment mới:
+
+- [ ] Kết nối GitHub repo với Vercel
+- [ ] Cấu hình Root Directory: `frontend`
+- [ ] Thêm Environment Variables trên Vercel
+- [ ] Kết nối GitHub repo với Render
+- [ ] Cấu hình Root Directory: `backend`  
+- [ ] Thêm Environment Variables trên Render
+- [ ] Tạo Neon database và lấy connection string
+- [ ] Chạy `prisma migrate deploy` lần đầu
 
 ---
 
-## 🎉 Kết luận
-
-Sau khi setup xong, quy trình làm việc của bạn sẽ là:
-
-1. **Code** trên branch feature
-2. **Push** lên GitHub
-3. **Create PR** vào main
-4. **GitHub Actions** tự động kiểm tra
-5. **Review & Merge** PR
-6. **Auto Deploy** lên Vercel & Render
-
-
-*Created for Bookstore Project - December 2024*
+*Cập nhật lần cuối: 12/12/2024*

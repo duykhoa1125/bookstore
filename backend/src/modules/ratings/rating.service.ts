@@ -172,7 +172,12 @@ export class RatingService {
       orderBy: { createdAt: "desc" },
     });
 
-    return ratings;
+    // Add vote counts to each rating for admin view
+    const ratingsWithVotes = await Promise.all(
+      ratings.map((rating) => this.addVotesToRating(rating))
+    );
+
+    return ratingsWithVotes;
   }
 
   async deleteByAdmin(ratingId: string) {
