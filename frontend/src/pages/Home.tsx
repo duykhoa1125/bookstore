@@ -6,12 +6,12 @@ import { BookCard } from '../components/BookCard'
 import { BookGridSkeleton } from '../components/SkeletonLoaders'
 import toast from 'react-hot-toast'
 import { useAuth } from '../contexts/AuthContext'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { GlowEffect } from '../components/effects/GlowEffect'
 import { CustomerReviews } from '../components/CustomerReviews'
 import { QuickViewModal } from '../components/QuickViewModal'
 import { AuthorSpotlight } from '../components/AuthorSpotlight'
-import { StatsMilestones } from '../components/StatsMilestones'
+
 import { Book } from '../types'
 import { AxiosError } from 'axios'
 
@@ -23,10 +23,6 @@ export default function Home() {
   // Quick View Modal state
   const [quickViewBook, setQuickViewBook] = useState<Book | null>(null)
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false)
-  
-  // Parallax refs
-  const parallaxRef = useRef<HTMLDivElement>(null)
-  const [scrollY, setScrollY] = useState(0)
 
   const { data: booksData, isLoading, error } = useQuery({
     queryKey: ['books', 'featured'],
@@ -50,24 +46,6 @@ export default function Home() {
     }, 5000)
     return () => clearInterval(timer)
   }, [heroBooks.length])
-  
-  // Parallax scroll effect with throttle to prevent excessive re-renders
-  useEffect(() => {
-    let ticking = false;
-    
-    const handleScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          setScrollY(window.scrollY);
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-    
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [])
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % heroBooks.length)
@@ -141,127 +119,215 @@ export default function Home() {
   return (
     <GlowEffect>
       <div className="relative">
-      {/* Hero Slideshow */}
-      <section className="relative h-[600px] lg:h-[700px] overflow-hidden bg-[#0a0a0a] group">
-        {heroBooks.length > 0 ? (
-          heroBooks.map((book, index) => (
-            <div
-              key={book.id}
-              className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-                index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'
-              }`}
-            >
-              {/* Background Image with Overlay */}
-              <div className="absolute inset-0">
-                {book.imageUrl ? (
-                   <img src={book.imageUrl} alt={book.title} className="w-full h-full object-cover opacity-40 blur-sm scale-110" />
-                ) : (
-                   <div className="w-full h-full bg-gradient-to-br from-[#0a0a0a] to-[#1a1a1a]" />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/60 to-transparent" />
-              </div>
+      {/* Hero Carousel - Card Style with Peek Effect */}
+      <section className="relative bg-[#0a0a0a] overflow-hidden">
+        {/* Header */}
+        <div className="text-center pt-8 pb-6 px-4">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white flex items-center justify-center gap-3 flex-wrap">
+            <span>BOOK</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">DEALS</span>
+            <span>EXTRAVAGANZA</span>
+          </h1>
+          <p className="text-gray-400 mt-2 text-sm md:text-base">LITERARY TREASURES & ADVENTURES</p>
+        </div>
 
-              {/* Content */}
-              <div className="absolute inset-0 flex items-center justify-center container mx-auto px-4 z-20">
-                <div className="flex flex-col md:flex-row items-center gap-8 md:gap-16 max-w-6xl mx-auto w-full">
-                  {/* Book Cover */}
-                  <div className={`w-48 md:w-64 lg:w-80 flex-shrink-0 transform transition-all duration-700 delay-300 ${
-                    index === currentSlide ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
-                  }`}>
-                    <div className="aspect-[2/3] rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10 relative transform rotate-y-12 rotate-x-6 hover:rotate-0 transition-all duration-500 bg-gray-800">
-                       {book.imageUrl ? (
-                         <img src={book.imageUrl} alt={book.title} className="w-full h-full object-cover" />
-                       ) : (
-                         <div className="w-full h-full bg-gray-800 flex items-center justify-center">
-                            <BookOpen className="w-16 h-16 text-gray-600" />
-                         </div>
-                       )}
-                       {/* Spine effect */}
-                       <div className="absolute top-0 left-0 w-4 h-full bg-gradient-to-r from-white/20 to-transparent z-10"></div>
+        {/* Carousel Container */}
+        <div className="relative h-[450px] md:h-[500px] lg:h-[550px] flex items-center justify-center px-4">
+          {heroBooks.length > 0 ? (
+            <div className="relative w-full max-w-7xl mx-auto flex items-center justify-center">
+              {heroBooks.map((book, index) => {
+                const offset = index - currentSlide
+                const isActive = index === currentSlide
+                const isPrev = offset === -1 || (currentSlide === 0 && index === heroBooks.length - 1)
+                const isNext = offset === 1 || (currentSlide === heroBooks.length - 1 && index === 0)
+                
+                // Calculate position for peek effect
+                let translateX = '0%'
+                let scale = 1
+                let opacity = 1
+                let zIndex = 10
+                let blur = 0
+                
+                if (isActive) {
+                  translateX = '0%'
+                  scale = 1
+                  opacity = 1
+                  zIndex = 20
+                } else if (isPrev) {
+                  translateX = '-85%'
+                  scale = 0.85
+                  opacity = 0.6
+                  zIndex = 10
+                  blur = 2
+                } else if (isNext) {
+                  translateX = '85%'
+                  scale = 0.85
+                  opacity = 0.6
+                  zIndex = 10
+                  blur = 2
+                } else {
+                  opacity = 0
+                  zIndex = 0
+                }
+
+                return (
+                  <div
+                    key={book.id}
+                    className="absolute w-full max-w-4xl transition-all duration-500 ease-out"
+                    style={{
+                      transform: `translateX(${translateX}) scale(${scale})`,
+                      opacity,
+                      zIndex,
+                      filter: blur > 0 ? `blur(${blur}px)` : 'none',
+                    }}
+                  >
+                    {/* Main Card */}
+                    <div className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-3xl overflow-hidden border border-gray-700/50 shadow-2xl mx-4">
+                      {/* Gradient border effect */}
+                      <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 opacity-50" />
+                      
+                      <div className="relative flex flex-col md:flex-row p-6 md:p-8 gap-6 md:gap-10">
+                        {/* Book Cover */}
+                        <div className="flex-shrink-0 flex justify-center md:justify-start">
+                          <div className="relative w-40 md:w-52 lg:w-60">
+                            <div className="aspect-[2/3] rounded-2xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.5)] border border-white/10 bg-gray-800 group">
+                              {book.imageUrl ? (
+                                <img 
+                                  src={book.imageUrl} 
+                                  alt={book.title} 
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
+                                  <BookOpen className="w-16 h-16 text-gray-500" />
+                                </div>
+                              )}
+                              {/* Shimmer effect */}
+                              <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                            </div>
+                            {/* Glow under book */}
+                            <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-3/4 h-8 bg-blue-500/30 blur-xl rounded-full" />
+                          </div>
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 text-center md:text-left text-white">
+                          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-2 leading-tight line-clamp-2">
+                            {book.title}
+                          </h2>
+                          
+                          {book.authors && (
+                            <p className="text-gray-400 mb-4 font-medium">
+                              {book.authors.map(a => a.author.name).join(', ')}
+                            </p>
+                          )}
+
+                          {/* Features list */}
+                          <ul className="space-y-2 mb-6 text-sm text-gray-300 hidden md:block">
+                            <li className="flex items-center gap-2">
+                              <span className="w-1.5 h-1.5 bg-blue-400 rounded-full" />
+                              Premium quality hardcover edition
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <span className="w-1.5 h-1.5 bg-purple-400 rounded-full" />
+                              Award-winning narrative
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <span className="w-1.5 h-1.5 bg-pink-400 rounded-full" />
+                              {book.stock > 0 ? `${book.stock} copies available` : 'Currently out of stock'}
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <span className="w-1.5 h-1.5 bg-green-400 rounded-full" />
+                              Best reading experience guaranteed
+                            </li>
+                          </ul>
+
+                          {/* Price */}
+                          <div className="flex items-baseline gap-3 mb-6 justify-center md:justify-start">
+                            <span className="text-3xl md:text-4xl font-bold text-white">
+                              ${book.price.toFixed(2)}
+                            </span>
+                            {book.price > 10 && (
+                              <span className="text-lg text-gray-500 line-through">
+                                ${(book.price * 1.25).toFixed(2)}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* CTA Button */}
+                          <Link
+                            to={`/books/${book.id}`}
+                            className="inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-[length:200%_100%] hover:bg-right text-white rounded-full font-bold transition-all duration-500 shadow-lg hover:shadow-purple-500/30 hover:scale-105"
+                          >
+                            Shop Now
+                            <ArrowRight className="w-5 h-5" />
+                          </Link>
+                        </div>
+                      </div>
                     </div>
                   </div>
-
-                  {/* Text Content */}
-                  <div className={`flex-1 text-center md:text-left text-white transform transition-all duration-700 delay-100 ${
-                    index === currentSlide ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
-                  }`}>
-                     <div className="inline-flex items-center px-3 py-1 bg-blue-500/20 backdrop-blur-md rounded-full border border-blue-500/30 text-blue-300 text-sm font-medium mb-4">
-                       <Sparkles className="w-4 h-4 mr-2" />
-                       Featured Selection
-                     </div>
-                     <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 leading-tight">
-                       {book.title}
-                     </h2>
-                     {book.authors && (
-                       <p className="text-xl text-gray-300 mb-6 font-medium">
-                         by {book.authors.map(a => a.author.name).join(', ')}
-                       </p>
-                     )}
-                     <p className="text-gray-400 mb-8 line-clamp-3 max-w-2xl text-lg leading-relaxed hidden md:block">
-                        {book.description || "Dive into this amazing journey. Discover characters, worlds, and stories that will stay with you forever."}
-                     </p>
-                     <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-                       <Link
-                         to={`/books/${book.id}`}
-                         className="px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-bold transition-all shadow-lg hover:shadow-blue-500/30 flex items-center justify-center"
-                       >
-                         View Details
-                         <ArrowRight className="ml-2 w-5 h-5" />
-                       </Link>
-                       <button
-                         onClick={(e) => handleAddToCart(e, book.id)}
-                         disabled={book.stock === 0}
-                         className="px-8 py-3.5 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/30 text-white rounded-full font-bold transition-all flex items-center justify-center"
-                       >
-                         {book.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
-                       </button>
-                     </div>
-                  </div>
-                </div>
-              </div>
+                )
+              })}
             </div>
-          ))
-        ) : (
-          /* Fallback Hero if no books */
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-900 to-gray-900 flex items-center justify-center text-white">
+          ) : (
+            /* Fallback Hero if no books */
             <div className="text-center px-4">
-              <h1 className="text-5xl font-bold mb-4">Welcome to Bookstore</h1>
-              <p className="text-xl text-gray-300 mb-8">Discover your next favorite read</p>
-              <Link to="/books" className="px-8 py-3 bg-blue-600 rounded-full font-bold hover:bg-blue-700 transition">
+              <BookOpen className="w-20 h-20 text-gray-600 mx-auto mb-6" />
+              <h1 className="text-4xl font-bold text-white mb-4">Welcome to Bookstore</h1>
+              <p className="text-xl text-gray-400 mb-8">Discover your next favorite read</p>
+              <Link to="/books" className="px-8 py-3.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full font-bold hover:scale-105 transition">
                 Browse Collection
               </Link>
             </div>
+          )}
+        </div>
+
+        {/* Navigation Controls */}
+        {heroBooks.length > 1 && (
+          <div className="flex items-center justify-center gap-6 pb-8">
+            <button 
+              onClick={prevSlide}
+              className="p-3 rounded-full bg-gray-800 hover:bg-gray-700 text-white border border-gray-700 transition-all hover:scale-110"
+              aria-label="Previous slide"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            
+            {/* Progress Bar */}
+            <div className="w-32 md:w-48 h-1 bg-gray-800 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-300"
+                style={{ width: `${((currentSlide + 1) / heroBooks.length) * 100}%` }}
+              />
+            </div>
+            
+            <button 
+              onClick={nextSlide}
+              className="p-3 rounded-full bg-gray-800 hover:bg-gray-700 text-white border border-gray-700 transition-all hover:scale-110"
+              aria-label="Next slide"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
           </div>
         )}
 
-        {/* Carousel Controls */}
-        {heroBooks.length > 1 && (
-          <>
-            <button 
-              onClick={prevSlide}
-              className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-black/30 hover:bg-black/50 text-white backdrop-blur-sm border border-white/10 transition-all opacity-0 group-hover:opacity-100 z-30"
-            >
-              <ChevronLeft className="w-6 h-6" />
-            </button>
-            <button 
-              onClick={nextSlide}
-              className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-black/30 hover:bg-black/50 text-white backdrop-blur-sm border border-white/10 transition-all opacity-0 group-hover:opacity-100 z-30"
-            >
-              <ChevronRight className="w-6 h-6" />
-            </button>
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2 z-30">
-              {heroBooks.map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setCurrentSlide(idx)}
-                  className={`w-2.5 h-2.5 rounded-full transition-all ${
-                    idx === currentSlide ? 'bg-white w-8' : 'bg-white/40 hover:bg-white/60'
-                  }`}
-                />
-              ))}
-            </div>
-          </>
-        )}
+        {/* Bottom Info Bar */}
+        <div className="bg-gray-900/80 backdrop-blur-sm border-t border-gray-800 py-3">
+          <div className="flex items-center justify-center gap-6 md:gap-10 text-xs md:text-sm text-gray-400">
+            <span className="flex items-center gap-2 hover:text-white transition-colors cursor-pointer">
+              <Sparkles className="w-4 h-4 text-purple-400" />
+              BESTSELLERS
+            </span>
+            <span className="flex items-center gap-2 hover:text-white transition-colors cursor-pointer">
+              <Award className="w-4 h-4 text-amber-400" />
+              AWARD WINNERS
+            </span>
+            <span className="flex items-center gap-2 hover:text-white transition-colors cursor-pointer">
+              <BookOpen className="w-4 h-4 text-blue-400" />
+              NEW ARRIVALS
+            </span>
+          </div>
+        </div>
       </section>
 
       {/* Features Grid */}
@@ -370,66 +436,11 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Stats & Milestones Section */}
-      <StatsMilestones />
-
       {/* Author Spotlight Section */}
       <AuthorSpotlight />
 
       {/* Customer Reviews Section */}
       <CustomerReviews />
-
-      {/* Parallax Decorative Section */}
-      <section 
-        ref={parallaxRef}
-        className="relative py-32 overflow-hidden bg-gradient-to-br from-blue-50 via-white to-purple-50"
-      >
-        {/* Floating decorative elements with parallax */}
-        <div 
-          className="absolute top-20 left-[10%] w-20 h-20 bg-blue-400/30 rounded-full blur-xl animate-float"
-          style={{ transform: `translateY(${scrollY * 0.1}px)` }}
-        />
-        <div 
-          className="absolute top-40 right-[15%] w-32 h-32 bg-purple-400/20 rounded-full blur-2xl animate-float"
-          style={{ transform: `translateY(${scrollY * 0.15}px)`, animationDelay: '1s' }}
-        />
-        <div 
-          className="absolute bottom-20 left-[20%] w-16 h-16 bg-teal-400/30 rounded-full blur-xl animate-float"
-          style={{ transform: `translateY(${scrollY * 0.08}px)`, animationDelay: '2s' }}
-        />
-        <div 
-          className="absolute bottom-40 right-[25%] w-24 h-24 bg-amber-400/20 rounded-full blur-2xl animate-float"
-          style={{ transform: `translateY(${scrollY * 0.12}px)`, animationDelay: '0.5s' }}
-        />
-        
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="text-center max-w-3xl mx-auto">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              Your Reading Journey
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-                Starts Here
-              </span>
-            </h2>
-            <p className="text-xl text-gray-600 mb-10">
-              Explore thousands of books, discover new authors, and find your next favorite read.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                to="/books"
-                className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-full shadow-xl hover:shadow-2xl hover:shadow-purple-500/30 transition-all hover:-translate-y-1"
-              >
-                Browse All Books
-              </Link>
-              <Link
-                to="/books?sortBy=rating&order=desc"
-                className="px-8 py-4 bg-white text-gray-900 font-bold rounded-full border border-gray-200 shadow-sm hover:shadow-lg hover:border-gray-300 transition-all hover:-translate-y-1"
-              >
-                Top Rated Books
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Newsletter Section */}
       <section className="py-24 bg-gray-900 relative overflow-hidden">
