@@ -1,60 +1,137 @@
 import prisma from "../../config/database";
 
+type TimeRange = "6M" | "30D" | "7D" | "Yesterday";
+
 export class AnalyticsService {
     /**
-     * Get revenue by month for the last N months
+     * Get date range based on timeRange parameter
      */
-    async getRevenueByMonth(months: number = 6) {
-        const startDate = new Date();
-        startDate.setMonth(startDate.getMonth() - months);
-        startDate.setDate(1);
-        startDate.setHours(0, 0, 0, 0);
+    private getDateRange(timeRange: TimeRange): { startDate: Date; endDate: Date } {
+        const now = new Date();
+        const endDate = new Date();
+        let startDate = new Date();
 
-        const payments = await prisma.payment.findMany({
-            where: {
-                status: "COMPLETED",
-                paymentDate: {
-                    gte: startDate,
-                },
-            },
-            select: {
-                total: true,
-                paymentDate: true,
-            },
-        });
-
-        // Group by month
-        const revenueByMonth: Record<string, number> = {};
-
-        for (let i = 0; i < months; i++) {
-            const date = new Date();
-            date.setMonth(date.getMonth() - i);
-            const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-            revenueByMonth[key] = 0;
+        switch (timeRange) {
+            case "6M":
+                startDate.setMonth(now.getMonth() - 6);
+                startDate.setDate(1);
+                startDate.setHours(0, 0, 0, 0);
+                break;
+            case "30D":
+                startDate.setDate(now.getDate() - 30);
+                startDate.setHours(0, 0, 0, 0);
+                break;
+            case "7D":
+                startDate.setDate(now.getDate() - 7);
+                startDate.setHours(0, 0, 0, 0);
+                break;
+            case "Yesterday":
+                startDate.setDate(now.getDate() - 1);
+                startDate.setHours(0, 0, 0, 0);
+                endDate.setDate(now.getDate() - 1);
+                endDate.setHours(23, 59, 59, 999);
+                break;
         }
 
-        payments.forEach((payment) => {
-            if (payment.paymentDate) {
-                const date = new Date(payment.paymentDate);
-                const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-                if (revenueByMonth[key] !== undefined) {
-                    revenueByMonth[key] += payment.total;
-                }
-            }
-        });
-
-        // Convert to array sorted by date
-        return Object.entries(revenueByMonth)
-            .map(([month, revenue]) => ({ month, revenue: Math.round(revenue * 100) / 100 }))
-            .sort((a, b) => a.month.localeCompare(b.month));
+        return { startDate, endDate };
     }
 
     /**
-     * Get orders count by status
+     * Get revenue data grouped by time period
+     * Returns data in format ready for frontend charts
      */
-    async getOrdersByStatus() {
+    async getRevenueByTimeRange(timeRange: TimeRange = "6M") {
+        const { startDate, endDate } = this.getDateRange(timeRange);
+        const now = new Date();
+
+        // Get all orders with completed payments in date range
+        const orders = await prisma.order.findMany({
+            where: {
+                orderDate: {
+                    gte: startDate,
+                    lte: endDate,
+                },
+                payment: {
+                    status: "COMPLETED",
+                },
+            },
+            select: {
+                orderDate: true,
+                payment: {
+                    select: {
+                        total: true,
+                    },
+                },
+            },
+        });
+
+        // Initialize revenue map based on time range
+        const revenueMap = new Map<string, number>();
+
+        if (timeRange === "6M") {
+            // Monthly grouping
+            for (let i = 5; i >= 0; i--) {
+                const d = new Date();
+                d.setMonth(now.getMonth() - i);
+                const key = d.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
+                revenueMap.set(key, 0);
+            }
+        } else if (timeRange === "30D" || timeRange === "7D") {
+            // Daily grouping
+            const days = timeRange === "30D" ? 30 : 7;
+            for (let i = days - 1; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(now.getDate() - i);
+                const key = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                revenueMap.set(key, 0);
+            }
+        } else if (timeRange === "Yesterday") {
+            // Hourly grouping
+            for (let i = 0; i < 24; i++) {
+                const key = `${i.toString().padStart(2, "0")}:00`;
+                revenueMap.set(key, 0);
+            }
+        }
+
+        // Aggregate revenue
+        orders.forEach((order) => {
+            const date = new Date(order.orderDate);
+            let key = "";
+
+            if (timeRange === "6M") {
+                key = date.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
+            } else if (timeRange === "30D" || timeRange === "7D") {
+                key = date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+            } else if (timeRange === "Yesterday") {
+                key = `${date.getHours().toString().padStart(2, "0")}:00`;
+            }
+
+            if (revenueMap.has(key) && order.payment) {
+                revenueMap.set(key, (revenueMap.get(key) || 0) + order.payment.total);
+            }
+        });
+
+        // Convert to array format expected by frontend
+        return Array.from(revenueMap.entries()).map(([monthDisplay, revenue]) => ({
+            monthDisplay,
+            revenue: Math.round(revenue * 100) / 100,
+        }));
+    }
+
+    /**
+     * Get orders count by status within time range
+     */
+    async getOrdersByStatus(timeRange: TimeRange = "6M") {
+        const { startDate, endDate } = this.getDateRange(timeRange);
+
         const orders = await prisma.order.groupBy({
             by: ["status"],
+            where: {
+                orderDate: {
+                    gte: startDate,
+                    lte: endDate,
+                },
+            },
             _count: {
                 id: true,
             },
@@ -67,12 +144,18 @@ export class AnalyticsService {
     }
 
     /**
-     * Get sales by category
+     * Get sales by category within time range
      */
-    async getSalesByCategory() {
+    async getSalesByCategory(timeRange: TimeRange = "6M") {
+        const { startDate, endDate } = this.getDateRange(timeRange);
+
         const orderItems = await prisma.orderItem.findMany({
             where: {
                 order: {
+                    orderDate: {
+                        gte: startDate,
+                        lte: endDate,
+                    },
                     status: {
                         not: "CANCELLED",
                     },
@@ -95,7 +178,7 @@ export class AnalyticsService {
         });
 
         // Group by category
-        const salesByCategory: Record<string, { name: string; totalSales: number; itemCount: number }> = {};
+        const salesByCategory: Record<string, { name: string; totalSales: number }> = {};
 
         orderItems.forEach((item) => {
             const categoryId = item.book.category.id;
@@ -105,12 +188,10 @@ export class AnalyticsService {
                 salesByCategory[categoryId] = {
                     name: categoryName,
                     totalSales: 0,
-                    itemCount: 0,
                 };
             }
 
             salesByCategory[categoryId].totalSales += item.price * item.quantity;
-            salesByCategory[categoryId].itemCount += item.quantity;
         });
 
         return Object.values(salesByCategory)
@@ -122,11 +203,17 @@ export class AnalyticsService {
     }
 
     /**
-     * Get top customers by total spending
+     * Get top customers by total spending within time range
      */
-    async getTopCustomers(limit: number = 5) {
+    async getTopCustomers(limit: number = 5, timeRange: TimeRange = "6M") {
+        const { startDate, endDate } = this.getDateRange(timeRange);
+
         const orders = await prisma.order.findMany({
             where: {
+                orderDate: {
+                    gte: startDate,
+                    lte: endDate,
+                },
                 status: {
                     not: "CANCELLED",
                 },
@@ -135,19 +222,22 @@ export class AnalyticsService {
                 },
             },
             select: {
-                total: true,
+                payment: {
+                    select: {
+                        total: true,
+                    },
+                },
                 user: {
                     select: {
                         id: true,
                         fullName: true,
-                        email: true,
                     },
                 },
             },
         });
 
         // Group by user
-        const customerSpending: Record<string, { id: string; fullName: string; email: string; totalSpent: number; orderCount: number }> = {};
+        const customerSpending: Record<string, { id: string; fullName: string; totalSpent: number; orderCount: number }> = {};
 
         orders.forEach((order) => {
             const userId = order.user.id;
@@ -155,12 +245,13 @@ export class AnalyticsService {
                 customerSpending[userId] = {
                     id: userId,
                     fullName: order.user.fullName,
-                    email: order.user.email,
                     totalSpent: 0,
                     orderCount: 0,
                 };
             }
-            customerSpending[userId].totalSpent += order.total;
+            if (order.payment) {
+                customerSpending[userId].totalSpent += order.payment.total;
+            }
             customerSpending[userId].orderCount += 1;
         });
 
@@ -174,25 +265,181 @@ export class AnalyticsService {
     }
 
     /**
-     * Get dashboard overview stats
+     * Get dashboard overview stats for time range
      */
-    async getDashboardStats() {
-        const [totalUsers, totalBooks, totalOrders, completedPayments] = await Promise.all([
-            prisma.user.count({ where: { role: "USER" } }),
-            prisma.book.count(),
-            prisma.order.count(),
-            prisma.payment.aggregate({
-                where: { status: "COMPLETED" },
-                _sum: { total: true },
-            }),
-        ]);
+    async getDashboardStats(timeRange: TimeRange = "6M") {
+        const { startDate, endDate } = this.getDateRange(timeRange);
+
+        // Get orders in time range
+        const orders = await prisma.order.findMany({
+            where: {
+                orderDate: {
+                    gte: startDate,
+                    lte: endDate,
+                },
+            },
+            select: {
+                userId: true,
+                payment: {
+                    select: {
+                        status: true,
+                        total: true,
+                    },
+                },
+            },
+        });
+
+        // Calculate stats
+        const totalOrders = orders.length;
+        const uniqueCustomerIds = new Set<string>();
+        let totalRevenue = 0;
+
+        orders.forEach((order) => {
+            if (order.userId) {
+                uniqueCustomerIds.add(order.userId);
+            }
+            if (order.payment?.status === "COMPLETED") {
+                totalRevenue += order.payment.total;
+            }
+        });
+
+        // Low stock books (not time dependent)
+        const lowStockBooks = await prisma.book.count({
+            where: {
+                stock: {
+                    lt: 10,
+                },
+            },
+        });
 
         return {
-            totalUsers,
-            totalBooks,
+            totalRevenue: Math.round(totalRevenue * 100) / 100,
+            uniqueCustomers: uniqueCustomerIds.size,
             totalOrders,
-            totalRevenue: Math.round((completedPayments._sum.total || 0) * 100) / 100,
+            lowStockBooks,
         };
+    }
+
+    /**
+     * Get recent orders within time range
+     */
+    async getRecentOrders(limit: number = 5, timeRange: TimeRange = "6M") {
+        const { startDate, endDate } = this.getDateRange(timeRange);
+
+        const orders = await prisma.order.findMany({
+            where: {
+                orderDate: {
+                    gte: startDate,
+                    lte: endDate,
+                },
+            },
+            orderBy: {
+                orderDate: "desc",
+            },
+            take: limit,
+            select: {
+                id: true,
+                orderDate: true,
+                status: true,
+                total: true,
+                user: {
+                    select: {
+                        id: true,
+                        fullName: true,
+                    },
+                },
+            },
+        });
+
+        return orders;
+    }
+
+    /**
+     * Get top selling books within time range
+     */
+    async getTopSellingBooks(limit: number = 4, timeRange: TimeRange = "6M") {
+        const { startDate, endDate } = this.getDateRange(timeRange);
+
+        const orderItems = await prisma.orderItem.findMany({
+            where: {
+                order: {
+                    orderDate: {
+                        gte: startDate,
+                        lte: endDate,
+                    },
+                    status: {
+                        not: "CANCELLED",
+                    },
+                },
+            },
+            select: {
+                quantity: true,
+                bookId: true,
+                book: {
+                    select: {
+                        id: true,
+                        title: true,
+                        price: true,
+                        imageUrl: true,
+                        authors: {
+                            select: {
+                                author: {
+                                    select: {
+                                        id: true,
+                                        name: true,
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        // Group by book and sum quantities
+        const salesMap: Record<string, { quantity: number; book: any }> = {};
+
+        orderItems.forEach((item) => {
+            if (!salesMap[item.bookId]) {
+                salesMap[item.bookId] = {
+                    quantity: 0,
+                    book: item.book,
+                };
+            }
+            salesMap[item.bookId].quantity += item.quantity;
+        });
+
+        return Object.values(salesMap)
+            .sort((a, b) => b.quantity - a.quantity)
+            .slice(0, limit)
+            .map((entry) => ({
+                ...entry.book,
+                sold: entry.quantity,
+            }));
+    }
+
+    /**
+     * Get books with low stock
+     */
+    async getLowStockBooks(threshold: number = 10) {
+        const books = await prisma.book.findMany({
+            where: {
+                stock: {
+                    lt: threshold,
+                },
+            },
+            select: {
+                id: true,
+                title: true,
+                stock: true,
+                imageUrl: true,
+            },
+            orderBy: {
+                stock: "asc",
+            },
+        });
+
+        return books;
     }
 }
 

@@ -501,28 +501,44 @@ class ApiClient {
   }
 
   // Analytics endpoints for admin dashboard
-  async getRevenueByMonth(months?: number): Promise<ApiResponse<{ month: string; revenue: number }[]>> {
-    const response = await this.client.get("/analytics/revenue-by-month", { params: { months } });
+  // TimeRange: '6M' | '30D' | '7D' | 'Yesterday'
+  async getRevenueByTimeRange(timeRange?: string): Promise<ApiResponse<{ monthDisplay: string; revenue: number }[]>> {
+    const response = await this.client.get("/analytics/revenue", { params: { timeRange } });
     return response.data;
   }
 
-  async getOrdersByStatus(): Promise<ApiResponse<{ status: string; count: number }[]>> {
-    const response = await this.client.get("/analytics/orders-by-status");
+  async getOrdersByStatus(timeRange?: string): Promise<ApiResponse<{ status: string; count: number }[]>> {
+    const response = await this.client.get("/analytics/orders-by-status", { params: { timeRange } });
     return response.data;
   }
 
-  async getSalesByCategory(): Promise<ApiResponse<{ name: string; totalSales: number; itemCount: number }[]>> {
-    const response = await this.client.get("/analytics/sales-by-category");
+  async getSalesByCategory(timeRange?: string): Promise<ApiResponse<{ name: string; totalSales: number }[]>> {
+    const response = await this.client.get("/analytics/sales-by-category", { params: { timeRange } });
     return response.data;
   }
 
-  async getTopCustomers(limit?: number): Promise<ApiResponse<{ id: string; fullName: string; email: string; totalSpent: number; orderCount: number }[]>> {
-    const response = await this.client.get("/analytics/top-customers", { params: { limit } });
+  async getTopCustomers(limit?: number, timeRange?: string): Promise<ApiResponse<{ id: string; fullName: string; totalSpent: number; orderCount: number }[]>> {
+    const response = await this.client.get("/analytics/top-customers", { params: { limit, timeRange } });
     return response.data;
   }
 
-  async getDashboardStats(): Promise<ApiResponse<{ totalUsers: number; totalBooks: number; totalOrders: number; totalRevenue: number }>> {
-    const response = await this.client.get("/analytics/dashboard-stats");
+  async getDashboardStats(timeRange?: string): Promise<ApiResponse<{ totalRevenue: number; uniqueCustomers: number; totalOrders: number; lowStockBooks: number }>> {
+    const response = await this.client.get("/analytics/dashboard-stats", { params: { timeRange } });
+    return response.data;
+  }
+
+  async getRecentOrders(limit?: number, timeRange?: string): Promise<ApiResponse<{ id: string; orderDate: string; status: string; total: number; user: { id: string; fullName: string } }[]>> {
+    const response = await this.client.get("/analytics/recent-orders", { params: { limit, timeRange } });
+    return response.data;
+  }
+
+  async getTopSellingBooks(limit?: number, timeRange?: string): Promise<ApiResponse<{ id: string; title: string; price: number; imageUrl: string; authors: { author: { id: string; name: string } }[]; sold: number }[]>> {
+    const response = await this.client.get("/analytics/top-selling-books", { params: { limit, timeRange } });
+    return response.data;
+  }
+
+  async getLowStockBooks(threshold?: number): Promise<ApiResponse<{ id: string; title: string; stock: number; imageUrl: string }[]>> {
+    const response = await this.client.get("/analytics/low-stock-books", { params: { threshold } });
     return response.data;
   }
 

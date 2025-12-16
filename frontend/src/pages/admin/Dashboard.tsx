@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { api } from '../../lib/api'
@@ -39,209 +39,63 @@ const STATUS_COLORS: Record<string, string> = {
   CANCELLED: '#ef4444'
 }
 
+type TimeRange = '6M' | '30D' | '7D' | 'Yesterday'
+
 export default function AdminDashboardOverview() {
-  const [timeRange, setTimeRange] = useState<'6M' | '30D' | '7D' | 'Yesterday'>('6M')
+  const [timeRange, setTimeRange] = useState<TimeRange>('6M')
   const [isTimeDropdownOpen, setIsTimeDropdownOpen] = useState(false)
 
-  // Fetch data for statistics
-  const { data: ordersData } = useQuery({
-    queryKey: ['admin-orders'],
-    queryFn: () => api.getAllOrders(),
+  // Fetch all analytics data from API
+  const { data: revenueResponse } = useQuery({
+    queryKey: ['analytics-revenue', timeRange],
+    queryFn: () => api.getRevenueByTimeRange(timeRange),
   })
 
-  const { data: booksData } = useQuery({
-    queryKey: ['books'],
-    queryFn: () => api.getBooks({}),
+  const { data: ordersStatusResponse } = useQuery({
+    queryKey: ['analytics-orders-status', timeRange],
+    queryFn: () => api.getOrdersByStatus(timeRange),
   })
 
-  const orders = ordersData?.data || []
-  const books = booksData?.data || []
+  const { data: categoryResponse } = useQuery({
+    queryKey: ['analytics-category', timeRange],
+    queryFn: () => api.getSalesByCategory(timeRange),
+  })
 
-  const {
-    revenueData,
-    ordersStatusData,
-    categoryData,
-    topCustomersData,
-    totalRevenue,
-    totalOrders,
-    lowStockBooks,
-    uniqueCustomers,
-    recentOrders,
-    topSellingBooks
-  } = useMemo(() => {
-    const now = new Date()
-    const filtered = orders.filter((order: any) => {
-      const orderDate = new Date(order.orderDate)
-      if (timeRange === '6M') {
-        const date = new Date(); date.setMonth(now.getMonth() - 6); date.setDate(1); date.setHours(0,0,0,0)
-        return orderDate >= date
-      }
-      if (timeRange === '30D') {
-        const date = new Date(); date.setDate(now.getDate() - 30); date.setHours(0,0,0,0)
-        return orderDate >= date
-      }
-      if (timeRange === '7D') {
-        const date = new Date(); date.setDate(now.getDate() - 7); date.setHours(0,0,0,0)
-        return orderDate >= date
-      }
-      if (timeRange === 'Yesterday') {
-        const start = new Date(); start.setDate(now.getDate() - 1); start.setHours(0,0,0,0)
-        const end = new Date(); end.setDate(now.getDate() - 1); end.setHours(23,59,59,999)
-        return orderDate >= start && orderDate <= end
-      }
-      return true
-    })
+  const { data: topCustomersResponse } = useQuery({
+    queryKey: ['analytics-top-customers', timeRange],
+    queryFn: () => api.getTopCustomers(5, timeRange),
+  })
 
-    // 1. Revenue Data
-    const revenueMap = new Map<string, number>()
-    
-    // Initialize map with empty values to ensure continuity
-    if (timeRange === '6M') {
-      for (let i = 5; i >= 0; i--) {
-        const d = new Date(); d.setMonth(now.getMonth() - i);
-        const key = d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
-        revenueMap.set(key, 0)
-      }
-    } else if (timeRange === '30D' || timeRange === '7D') {
-      const days = timeRange === '30D' ? 30 : 7
-      for (let i = days - 1; i >= 0; i--) {
-        const d = new Date(); d.setDate(now.getDate() - i);
-        const key = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-        revenueMap.set(key, 0)
-      }
-    } else if (timeRange === 'Yesterday') {
-      for (let i = 0; i < 24; i++) {
-        const key = `${i.toString().padStart(2, '0')}:00`
-        revenueMap.set(key, 0)
-      }
-    }
+  const { data: statsResponse } = useQuery({
+    queryKey: ['analytics-stats', timeRange],
+    queryFn: () => api.getDashboardStats(timeRange),
+  })
 
-    filtered.forEach((order: any) => {
-      if (order.payment?.status !== 'COMPLETED') return
-      const date = new Date(order.orderDate)
-      let key = ''
-      if (timeRange === '6M') {
-        key = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
-      } else if (timeRange === '30D' || timeRange === '7D') {
-        key = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-      } else if (timeRange === 'Yesterday') {
-        key = `${date.getHours().toString().padStart(2, '0')}:00`
-      }
-      
-      if (revenueMap.has(key)) {
-        revenueMap.set(key, (revenueMap.get(key) || 0) + order.payment.total)
-      }
-    })
+  const { data: recentOrdersResponse } = useQuery({
+    queryKey: ['analytics-recent-orders', timeRange],
+    queryFn: () => api.getRecentOrders(5, timeRange),
+  })
 
-    const revenue = Array.from(revenueMap.entries()).map(([monthDisplay, revenue]) => ({
-      monthDisplay,
-      revenue
-    }))
+  const { data: topSellingBooksResponse } = useQuery({
+    queryKey: ['analytics-top-selling', timeRange],
+    queryFn: () => api.getTopSellingBooks(4, timeRange),
+  })
 
-    // 2. Orders Status
-    const statusMap = new Map<string, number>()
-    filtered.forEach((order: any) => {
-      statusMap.set(order.status, (statusMap.get(order.status) || 0) + 1)
-    })
-    const statusData = Array.from(statusMap.entries()).map(([status, count]) => ({
-      status,
-      count
-    }))
-
-    // 3. Sales by Category
-    const categoryMap = new Map<string, { name: string, totalSales: number }>()
-    filtered.forEach((order: any) => {
-      if (order.status === 'CANCELLED') return
-      order.items?.forEach((item: any) => {
-        const book = item.book || books.find((b: any) => b.id === item.bookId)
-        if (book?.category) {
-          const catName = book.category.name
-          const current = categoryMap.get(catName) || { name: catName, totalSales: 0 }
-          current.totalSales += (item.price || book.price) * item.quantity
-          categoryMap.set(catName, current)
-        }
-      })
-    })
-    const catData = Array.from(categoryMap.values())
-      .sort((a, b) => b.totalSales - a.totalSales)
-
-    // 4. Top Customers
-    const customerMap = new Map<string, { id: string, fullName: string, orderCount: number, totalSpent: number }>()
-    filtered.forEach((order: any) => {
-      if (order.status === 'CANCELLED' || order.payment?.status !== 'COMPLETED') return
-      const userId = order.userId
-      if (!userId) return
-      
-      const current = customerMap.get(userId) || { 
-        id: userId, 
-        fullName: order.user?.fullName || 'Unknown', 
-        orderCount: 0, 
-        totalSpent: 0 
-      }
-      current.orderCount += 1
-      current.totalSpent += order.payment.total
-      customerMap.set(userId, current)
-    })
-    const custData = Array.from(customerMap.values())
-      .sort((a, b) => b.totalSpent - a.totalSpent)
-      .slice(0, 5)
-
-    // 5. Stats
-    const totalRev = filtered.reduce((sum: number, order: any) => {
-      const paymentTotal = order?.payment?.status === 'COMPLETED' ? order.payment.total : 0
-      return sum + (paymentTotal || 0)
-    }, 0)
-
-    const totalOrd = filtered.length
-    const lowStock = books.filter((b: any) => b.stock < 10).length // This is global, not time dependent, but okay
-
-    const customerIds = new Set<string>()
-    filtered.forEach((o: any) => { if (o.userId) customerIds.add(o.userId) })
-
-    const recent = [...filtered]
-      .sort((a: any, b: any) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime())
-      .slice(0, 5)
-
-    const salesMap = new Map<string, { quantity: number, book: any }>()
-    filtered.forEach((order: any) => {
-      if (order.status === 'CANCELLED') return
-      order.items?.forEach((item: any) => {
-        const current = salesMap.get(item.bookId)
-        const bookRef = item.book || books.find((b: any) => b.id === item.bookId)
-        if (!bookRef) return
-        if (current) {
-          current.quantity += item.quantity
-        } else {
-          salesMap.set(item.bookId, { quantity: item.quantity, book: bookRef })
-        }
-      })
-    })
-    const topSelling = Array.from(salesMap.values())
-      .sort((a, b) => b.quantity - a.quantity)
-      .slice(0, 4)
-      .map(entry => ({ ...entry.book, sold: entry.quantity }))
-
-    return {
-      filteredOrders: filtered,
-      revenueData: revenue,
-      ordersStatusData: statusData,
-      categoryData: catData,
-      topCustomersData: custData,
-      totalRevenue: totalRev,
-      totalOrders: totalOrd,
-      lowStockBooks: lowStock,
-      uniqueCustomers: customerIds.size,
-      recentOrders: recent,
-      topSellingBooks: topSelling
-    }
-  }, [orders, books, timeRange])
+  // Extract data from responses
+  const revenueData = revenueResponse?.data || []
+  const ordersStatusData = ordersStatusResponse?.data || []
+  const categoryData = categoryResponse?.data || []
+  const topCustomersData = topCustomersResponse?.data || []
+  const stats = statsResponse?.data || { totalRevenue: 0, uniqueCustomers: 0, totalOrders: 0, lowStockBooks: 0 }
+  const recentOrders = recentOrdersResponse?.data || []
+  const topSellingBooks = topSellingBooksResponse?.data || []
 
   const totalStatusOrders = ordersStatusData.reduce((acc: number, curr: any) => acc + (curr.count || 0), 0)
 
-  const stats = [
+  const statCards = [
     {
       title: 'Total Revenue',
-      value: `$${totalRevenue.toFixed(2)}`,
+      value: `$${stats.totalRevenue.toFixed(2)}`,
       change: 'Completed payment revenue',
       trending: 'neutral',
       icon: DollarSign,
@@ -250,7 +104,7 @@ export default function AdminDashboardOverview() {
     },
     {
       title: 'Customers',
-      value: uniqueCustomers.toString(),
+      value: stats.uniqueCustomers.toString(),
       change: 'Distinct buyers in system',
       trending: 'neutral',
       icon: Users,
@@ -259,7 +113,7 @@ export default function AdminDashboardOverview() {
     },
     {
       title: 'Total Orders',
-      value: totalOrders.toString(),
+      value: stats.totalOrders.toString(),
       change: 'All order statuses',
       trending: 'neutral',
       icon: ShoppingCart,
@@ -268,7 +122,7 @@ export default function AdminDashboardOverview() {
     },
     {
       title: 'Stock Alerts',
-      value: lowStockBooks.toString(),
+      value: stats.lowStockBooks.toString(),
       change: 'Books with stock < 10',
       trending: 'neutral',
       icon: AlertTriangle,
@@ -327,10 +181,10 @@ export default function AdminDashboardOverview() {
           {isTimeDropdownOpen && (
             <div className="absolute right-0 mt-3 w-48 bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl z-50 border border-white/50 ring-1 ring-black/5 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
               <div className="py-2">
-                {['Yesterday', '7D', '30D', '6M'].map((range) => (
+                {(['Yesterday', '7D', '30D', '6M'] as TimeRange[]).map((range) => (
                   <button
                     key={range}
-                    onClick={() => { setTimeRange(range as any); setIsTimeDropdownOpen(false) }}
+                    onClick={() => { setTimeRange(range); setIsTimeDropdownOpen(false) }}
                     className={`block w-full text-left px-5 py-2.5 text-sm font-medium transition-colors ${
                       timeRange === range 
                         ? 'bg-blue-50 text-blue-600' 
@@ -348,7 +202,7 @@ export default function AdminDashboardOverview() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 lg:mb-8">
-        {stats.map((stat) => {
+        {statCards.map((stat) => {
           const Icon = stat.icon
           return (
             <div key={stat.title} className="group bg-white/60 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-3 sm:p-4 lg:p-6 border border-white/60 shadow-lg shadow-gray-200/50 hover:shadow-xl hover:scale-[1.02] transition-all duration-300">
@@ -465,7 +319,7 @@ export default function AdminDashboardOverview() {
                     nameKey="status"
                     cornerRadius={6}
                   >
-                    {ordersStatusData.map((entry, index) => (
+                    {ordersStatusData.map((entry: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.status] || COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
@@ -543,7 +397,7 @@ export default function AdminDashboardOverview() {
                     formatter={(value: number) => [`$${value.toFixed(2)}`, 'Total Sales']}
                   />
                   <Bar dataKey="totalSales" radius={[0, 8, 8, 0]} barSize={24}>
-                    {categoryData.slice(0, 8).map((_, index) => (
+                    {categoryData.slice(0, 8).map((_: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Bar>
@@ -570,7 +424,7 @@ export default function AdminDashboardOverview() {
           </div>
           <div className="space-y-4">
             {topCustomersData.length > 0 ? (
-              topCustomersData.map((customer, index) => (
+              topCustomersData.map((customer: any, index: number) => (
                 <div key={customer.id} className="group flex items-center space-x-4 p-4 bg-white/50 rounded-2xl border border-white/50 hover:bg-white hover:shadow-md transition-all duration-300">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md ring-2 ring-white ${
                     index === 0 ? 'bg-gradient-to-br from-amber-400 to-orange-500' : 
