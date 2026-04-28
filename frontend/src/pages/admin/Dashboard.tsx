@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { api } from '../../lib/api'
-import type { Order, Book, BookAuthor } from '../../types'
 import { 
   DollarSign, 
   Users, 
@@ -338,10 +337,11 @@ export default function AdminDashboardOverview() {
                     verticalAlign="bottom" 
                     height={36}
                     iconType="circle"
-                    formatter={(value, entry: { payload?: { count?: number } }) => {
+                    formatter={(value: any, entry: any) => {
                       const { payload } = entry;
+                      const count = payload?.count || 0;
                       const percent = totalStatusOrders > 0 
-                        ? ((payload.count / totalStatusOrders) * 100).toFixed(0) 
+                        ? ((count / totalStatusOrders) * 100).toFixed(0) 
                         : 0;
                       return <span className="text-xs font-medium text-gray-600 ml-1">{value} ({percent}%)</span>;
                     }}
@@ -475,7 +475,7 @@ export default function AdminDashboardOverview() {
               </thead>
               <tbody className="divide-y divide-gray-100/50 bg-white/30">
                 {recentOrders.length > 0 ? (
-                  recentOrders.map((order: Order) => (
+                  recentOrders.map((order: any) => (
                     <tr key={order.id} className="hover:bg-blue-50/30 transition-colors">
                       <td className="px-4 py-3 whitespace-nowrap text-sm font-bold text-gray-900">
                         #{order.id.substring(0, 8)}
@@ -520,7 +520,7 @@ export default function AdminDashboardOverview() {
           </div>
           <div className="p-6 space-y-6">
             {topSellingBooks.length > 0 ? (
-              topSellingBooks.map((book: Book & { sold?: number }, index: number) => (
+              topSellingBooks.map((book: any, index: number) => (
                 <div key={book.id} className="flex items-center space-x-4 group">
                   <div className="flex-shrink-0 relative">
                     <div className="absolute -top-2 -left-2 w-6 h-6 bg-gray-900 text-white rounded-full flex items-center justify-center text-xs font-bold shadow-md z-10 border-2 border-white">
@@ -541,7 +541,7 @@ export default function AdminDashboardOverview() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-gray-900 truncate leading-snug group-hover:text-blue-600 transition-colors">{book.title}</p>
                     <p className="text-xs text-gray-500 truncate mt-1">
-                      by {book.authors?.map((a: BookAuthor) => a.author.name).join(', ')}
+                      by {book.authors?.map((a: any) => a.author.name).join(', ')}
                     </p>
                   </div>
                   <div className="text-right">

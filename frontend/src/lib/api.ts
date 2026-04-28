@@ -437,6 +437,11 @@ class ApiClient {
     return response.data;
   }
 
+  async deleteRating(id: string): Promise<ApiResponse<{ message: string }>> {
+    const response = await this.client.delete(`/ratings/${id}`);
+    return response.data;
+  }
+
   // Rating vote endpoints
   async voteRating(
     ratingId: string,

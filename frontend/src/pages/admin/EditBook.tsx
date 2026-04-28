@@ -5,7 +5,7 @@ import { api } from '../../lib/api'
 import { ArrowLeft } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { BookImageUpload } from '../../components/BookImageUpload'
-import type { Category, Publisher, Author, BookAuthor } from '../../types'
+import type { Category, Publisher, Author } from '../../types'
 
 export default function EditBook() {
   const { id } = useParams<{ id: string }>()
@@ -54,7 +54,7 @@ export default function EditBook() {
         imageUrl: book.imageUrl || '',
         publisherId: book.publisherId,
         categoryId: book.categoryId,
-        authorIds: book.authors?.map((a: BookAuthor & { id?: string }) => a.author?.id || a.id) || [],
+        authorIds: (book.authors?.map((a: any) => a.author?.id || a.id).filter(Boolean) as string[]) || [],
       })
     }
   }, [bookData])
@@ -77,7 +77,7 @@ export default function EditBook() {
         const errorMessages = Object.values(errorDetails).flat()
         errorMessages.forEach((msg: unknown) => toast.error(String(msg)))
       } else {
-        toast.error(errorMessage)
+        toast.error(errorMessage || 'Failed to update book')
       }
     },
   })

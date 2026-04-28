@@ -54,7 +54,7 @@ export default function CreateBook() {
         const errorMessages = Object.values(errorDetails).flat()
         errorMessages.forEach((msg: unknown) => toast.error(String(msg)))
       } else {
-        toast.error(errorMessage)
+        toast.error(errorMessage || 'Failed to create book')
       }
     },
   })
