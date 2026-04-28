@@ -64,8 +64,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(user);
         toast.success('Login successful!');
       }
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Login failed';
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      const message = err.response?.data?.message || 'Login failed';
       toast.error(message);
       throw error;
     }
@@ -99,8 +100,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(user);
         toast.success('Registration successful!');
       }
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Registration failed';
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      const message = err.response?.data?.message || 'Registration failed';
       toast.error(message);
       throw error;
     }
@@ -115,8 +117,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(updatedUser);
         toast.success('Profile updated successfully!');
       }
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Profile update failed';
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      const message = err.response?.data?.message || 'Profile update failed';
       toast.error(message);
       throw error;
     }
@@ -149,6 +152,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {

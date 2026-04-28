@@ -6,6 +6,7 @@ import toast from 'react-hot-toast'
 import Modal from '../../components/Modal'
 import ConfirmModal from '../../components/ConfirmModal'
 import Pagination from '../../components/Pagination'
+import type { Publisher } from '../../types'
 
 export default function AdminPublishers() {
   const queryClient = useQueryClient()
@@ -21,6 +22,11 @@ export default function AdminPublishers() {
     queryFn: () => api.getPublishers(),
   })
 
+  // Type guard for API errors
+  const isApiError = (error: unknown): error is { response?: { data?: { message?: string } } } => {
+    return typeof error === 'object' && error !== null && 'response' in error
+  }
+
   const createMutation = useMutation({
     mutationFn: (data: { name: string }) => api.createPublisher(data),
     onSuccess: () => {
@@ -29,8 +35,9 @@ export default function AdminPublishers() {
       setShowCreateModal(false)
       setName('')
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to create publisher')
+    onError: (error: unknown) => {
+      const message = isApiError(error) ? error.response?.data?.message : undefined
+      toast.error(message || 'Failed to create publisher')
     },
   })
 
@@ -43,8 +50,9 @@ export default function AdminPublishers() {
       setEditingPublisher(null)
       setName('')
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to update publisher')
+    onError: (error: unknown) => {
+      const message = isApiError(error) ? error.response?.data?.message : undefined
+      toast.error(message || 'Failed to update publisher')
     },
   })
 
@@ -55,8 +63,9 @@ export default function AdminPublishers() {
       toast.success('Publisher deleted successfully')
       setDeleteId(null)
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to delete publisher')
+    onError: (error: unknown) => {
+      const message = isApiError(error) ? error.response?.data?.message : undefined
+      toast.error(message || 'Failed to delete publisher')
     },
   })
 
@@ -78,7 +87,7 @@ export default function AdminPublishers() {
     }
   }
 
-  const handleEdit = (publisher: any) => {
+  const handleEdit = (publisher: Publisher) => {
     setEditingPublisher({ id: publisher.id, name: publisher.name })
     setName(publisher.name)
     setShowCreateModal(true)
@@ -178,7 +187,7 @@ export default function AdminPublishers() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100/50 bg-white/30">
-                {paginatedPublishers.map((publisher) => (
+                {paginatedPublishers.map((publisher: Publisher) => (
                   <tr key={publisher.id} className="hover:bg-blue-50/30 transition-colors group">
                     <td className="px-8 py-5 whitespace-nowrap">
                       <div className="flex items-center">

@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { Rating } from '../../types'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { Trash2, Star, Search, X, MessageSquare, ThumbsUp, ThumbsDown, Eye, AlertTriangle, Settings, Plus } from 'lucide-react'
 import ConfirmModal from '../../components/ConfirmModal'
 import Modal from '../../components/Modal'
@@ -78,18 +78,18 @@ export default function AdminReviews() {
   }
 
   // Check if content contains sensitive keywords
-  const hasSensitiveContent = (content?: string) => {
+  const hasSensitiveContent = useCallback((content?: string) => {
     if (!content) return false
     const contentLower = content.toLowerCase()
     return allKeywords.some(keyword => contentLower.includes(keyword))
-  }
+  }, [allKeywords])
 
   // Check if rating is suspicious (more downvotes than upvotes)
-  const isSuspicious = (rating: Rating) => {
+  const isSuspicious = useCallback((rating: Rating) => {
     const downvotes = rating.downvotes || 0
     const upvotes = rating.upvotes || 0
     return downvotes > upvotes && downvotes >= 2
-  }
+  }, [])
 
   // Filter and sort ratings
   const filteredRatings = useMemo(() => {
@@ -134,19 +134,18 @@ export default function AdminReviews() {
     })
 
     return result
-  }, [data?.data, searchQuery, starsFilter, statusFilter, sortBy, allKeywords])
+  }, [data?.data, searchQuery, starsFilter, statusFilter, sortBy, hasSensitiveContent, isSuspicious])
 
   // Count suspicious and sensitive reviews for badges
   const suspiciousCount = useMemo(() => {
     const ratingsList = data?.data || []
     return ratingsList.filter((r: Rating) => isSuspicious(r)).length
-  }, [data?.data])
+  }, [data?.data, isSuspicious])
 
   const sensitiveCount = useMemo(() => {
     const ratingsList = data?.data || []
     return ratingsList.filter((r: Rating) => hasSensitiveContent(r.content)).length
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data?.data, allKeywords])
+  }, [data?.data, hasSensitiveContent])
 
   // Pagination
   const totalPages = Math.ceil(filteredRatings.length / itemsPerPage)

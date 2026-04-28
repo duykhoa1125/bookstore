@@ -5,6 +5,7 @@ import { Plus, Edit, Trash2, CreditCard } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Modal from '../../components/Modal'
 import ConfirmModal from '../../components/ConfirmModal'
+import type { PaymentMethod } from '../../types'
 
 export default function AdminPaymentMethods() {
   const queryClient = useQueryClient()
@@ -18,6 +19,11 @@ export default function AdminPaymentMethods() {
     queryFn: () => api.getPaymentMethods(),
   })
 
+  // Type guard for API errors
+  const isApiError = (error: unknown): error is { response?: { data?: { message?: string } } } => {
+    return typeof error === 'object' && error !== null && 'response' in error
+  }
+
   const createMutation = useMutation({
     mutationFn: (data: { name: string; description?: string; isActive?: boolean }) =>
       api.createPaymentMethod(data),
@@ -27,21 +33,23 @@ export default function AdminPaymentMethods() {
       setShowCreateModal(false)
       setFormData({ name: '' })
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to create payment method')
+    onError: (error: unknown) => {
+      const message = isApiError(error) ? error.response?.data?.message : undefined
+      toast.error(message || 'Failed to create payment method')
     },
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => api.updatePaymentMethod(id, data),
+    mutationFn: ({ id, data }: { id: string; data: { name: string } }) => api.updatePaymentMethod(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payment-methods'] })
       toast.success('Payment method updated successfully')
       setEditingMethod(null)
       setFormData({ name: '' })
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to update payment method')
+    onError: (error: unknown) => {
+      const message = isApiError(error) ? error.response?.data?.message : undefined
+      toast.error(message || 'Failed to update payment method')
     },
   })
 
@@ -52,8 +60,9 @@ export default function AdminPaymentMethods() {
       toast.success('Payment method deleted successfully')
       setDeleteId(null)
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to delete payment method')
+    onError: (error: unknown) => {
+      const message = isApiError(error) ? error.response?.data?.message : undefined
+      toast.error(message || 'Failed to delete payment method')
     },
   })
 
@@ -72,7 +81,7 @@ export default function AdminPaymentMethods() {
     }
   }
 
-  const handleEdit = (method: any) => {
+  const handleEdit = (method: PaymentMethod) => {
     setEditingMethod({ 
       id: method.id, 
       name: method.name, 
@@ -180,7 +189,7 @@ export default function AdminPaymentMethods() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100/50 bg-white/30">
-                {methods.map((method) => (
+                {methods.map((method: PaymentMethod) => (
                   <tr key={method.id} className="hover:bg-blue-50/30 transition-colors group">
                     <td className="px-8 py-5 whitespace-nowrap">
                       <div className="flex items-center">

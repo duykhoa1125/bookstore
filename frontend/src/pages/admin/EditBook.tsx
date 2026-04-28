@@ -5,6 +5,7 @@ import { api } from '../../lib/api'
 import { ArrowLeft } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { BookImageUpload } from '../../components/BookImageUpload'
+import type { Category, Publisher, Author, BookAuthor } from '../../types'
 
 export default function EditBook() {
   const { id } = useParams<{ id: string }>()
@@ -53,25 +54,28 @@ export default function EditBook() {
         imageUrl: book.imageUrl || '',
         publisherId: book.publisherId,
         categoryId: book.categoryId,
-        authorIds: book.authors?.map((a: any) => a.author?.id || a.id) || [],
+        authorIds: book.authors?.map((a: BookAuthor & { id?: string }) => a.author?.id || a.id) || [],
       })
     }
   }, [bookData])
 
   const updateMutation = useMutation({
-    mutationFn: (data: any) => api.updateBook(id!, data),
+    mutationFn: (data: { title: string; price: number; stock: number; description?: string; imageUrl?: string; publisherId: string; categoryId: string; authorIds: string[] }) => api.updateBook(id!, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['books'] })
       queryClient.invalidateQueries({ queryKey: ['book', id] })
       toast.success('Book updated successfully')
       navigate('/admin/books')
     },
-    onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || 'Failed to update book'
-      const errorDetails = error.response?.data?.errors
+    onError: (error: unknown) => {
+      const isApiError = (err: unknown): err is { response?: { data?: { message?: string; errors?: Record<string, string[]> } } } => {
+        return typeof err === 'object' && err !== null && 'response' in err;
+      };
+      const errorMessage = isApiError(error) ? error.response?.data?.message : 'Failed to update book'
+      const errorDetails = isApiError(error) ? error.response?.data?.errors : undefined
       if (errorDetails) {
         const errorMessages = Object.values(errorDetails).flat()
-        errorMessages.forEach((msg: any) => toast.error(msg))
+        errorMessages.forEach((msg: unknown) => toast.error(String(msg)))
       } else {
         toast.error(errorMessage)
       }
@@ -232,7 +236,7 @@ export default function EditBook() {
                 className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none shadow-sm appearance-none"
               >
                 <option value="">Select Publisher</option>
-                {publishers.map((publisher) => (
+                {publishers.map((publisher: Publisher) => (
                   <option key={publisher.id} value={publisher.id}>
                     {publisher.name}
                   </option>
@@ -249,7 +253,7 @@ export default function EditBook() {
                 className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none shadow-sm appearance-none"
               >
                 <option value="">Select Category</option>
-                {categories.map((category) => (
+                {categories.map((category: Category) => (
                   <option key={category.id} value={category.id}>
                     {category.name}
                   </option>
@@ -265,7 +269,7 @@ export default function EditBook() {
                 <p className="text-gray-500 text-sm italic">No authors available</p>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {authors.map((author) => (
+                  {authors.map((author: Author) => (
                     <label key={author.id} className="flex items-center space-x-3 cursor-pointer p-2 hover:bg-gray-50 rounded-lg transition-colors">
                       <input
                         type="checkbox"

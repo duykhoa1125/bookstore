@@ -48,7 +48,7 @@ export default function AdminUsers() {
     updateMutation.mutate({ id: selected.id, data: form })
   }
 
-  const users = data?.data || []
+  const users = useMemo(() => data?.data || [], [data?.data])
 
   // Filter users based on search and role
   const filteredUsers = useMemo(() => {

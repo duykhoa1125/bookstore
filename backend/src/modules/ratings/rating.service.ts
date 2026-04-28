@@ -161,6 +161,4 @@ export class RatingService {
 
     return rating;
   }
-
-  }
 }

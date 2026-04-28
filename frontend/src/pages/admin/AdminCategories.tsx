@@ -6,6 +6,7 @@ import toast from 'react-hot-toast'
 import Modal from '../../components/Modal'
 import ConfirmModal from '../../components/ConfirmModal'
 import Pagination from '../../components/Pagination'
+import type { Category } from '../../types'
 
 export default function AdminCategories() {
   const queryClient = useQueryClient()
@@ -21,6 +22,11 @@ export default function AdminCategories() {
     queryFn: () => api.getCategories(),
   })
 
+  // Type guard for API errors
+  const isApiError = (error: unknown): error is { response?: { data?: { message?: string } } } => {
+    return typeof error === 'object' && error !== null && 'response' in error
+  }
+
   const createMutation = useMutation({
     mutationFn: (data: { name: string; parentCategoryId?: string }) =>
       api.createCategory(data),
@@ -30,21 +36,23 @@ export default function AdminCategories() {
       setShowCreateModal(false)
       setFormData({ name: '', parentCategoryId: '' })
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to create category')
+    onError: (error: unknown) => {
+      const message = isApiError(error) ? error.response?.data?.message : undefined
+      toast.error(message || 'Failed to create category')
     },
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => api.updateCategory(id, data),
+    mutationFn: ({ id, data }: { id: string; data: { name: string; parentCategoryId?: string } }) => api.updateCategory(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] })
       toast.success('Category updated successfully')
       setEditingCategory(null)
       setFormData({ name: '', parentCategoryId: '' })
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to update category')
+    onError: (error: unknown) => {
+      const message = isApiError(error) ? error.response?.data?.message : undefined
+      toast.error(message || 'Failed to update category')
     },
   })
 
@@ -55,8 +63,9 @@ export default function AdminCategories() {
       toast.success('Category deleted successfully')
       setDeleteId(null)
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to delete category')
+    onError: (error: unknown) => {
+      const message = isApiError(error) ? error.response?.data?.message : undefined
+      toast.error(message || 'Failed to delete category')
     },
   })
 
@@ -83,7 +92,7 @@ export default function AdminCategories() {
     }
   }
 
-  const handleEdit = (category: any) => {
+  const handleEdit = (category: Category) => {
     setEditingCategory({ id: category.id, name: category.name })
     setFormData({
       name: category.name,
@@ -187,7 +196,7 @@ export default function AdminCategories() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100/50 bg-white/30">
-                {paginatedCategories.map((category) => (
+                {paginatedCategories.map((category: Category) => (
                   <tr key={category.id} className="hover:bg-blue-50/30 transition-colors group">
                     <td className="px-8 py-5 whitespace-nowrap">
                       <div className="flex items-center">

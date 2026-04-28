@@ -5,6 +5,7 @@ import { Package, Loader2, Eye, Search, X } from 'lucide-react'
 import Pagination from '../../components/Pagination'
 import toast from 'react-hot-toast'
 import { Link } from 'react-router-dom'
+import type { Order } from '../../types'
 
 export default function AdminOrders() {
   const queryClient = useQueryClient()
@@ -19,39 +20,47 @@ export default function AdminOrders() {
     queryFn: () => api.getAllOrders(),
   })
 
+  // Type guard for API errors
+  const isApiError = (error: unknown): error is { response?: { data?: { message?: string } } } => {
+    return typeof error === 'object' && error !== null && 'response' in error
+  }
+
   const confirmOrderMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' }) =>
       api.confirmOrder(id, status),
     onMutate: async ({ id, status }) => {
       setPendingById((m) => ({ ...m, [id]: true }))
       await queryClient.cancelQueries({ queryKey: ['admin-orders'] })
-      const previous = queryClient.getQueryData(['admin-orders']) as any
+      const previous = queryClient.getQueryData(['admin-orders'])
       // Optimistically update order status in cache
-      queryClient.setQueryData(['admin-orders'], (oldData: any) => {
+      queryClient.setQueryData(['admin-orders'], (oldData: { data: Order[] } | undefined) => {
         if (!oldData?.data) return oldData
-        const updated = oldData.data.map((o: any) =>
+        const updated = oldData.data.map((o: Order) =>
           o.id === id ? { ...o, status } : o
         )
         return { ...oldData, data: updated }
       })
       return { previous, id }
     },
-    onError: (error: any, _variables, context) => {
+    onError: (error: unknown, _variables, context) => {
       if (context?.previous) {
         queryClient.setQueryData(['admin-orders'], context.previous)
       }
-      toast.error(error?.response?.data?.message || 'Failed to update order status')
+      const message = isApiError(error) ? error.response?.data?.message : undefined
+      toast.error(message || 'Failed to update order status')
     },
     onSettled: (_data, _err, variables, context) => {
       if (variables?.id) {
         setPendingById((m) => {
-          const { [variables.id]: _removed, ...rest } = m
-          return rest
+          const newM = { ...m }
+          delete newM[variables.id]
+          return newM
         })
       } else if (context?.id) {
         setPendingById((m) => {
-          const { [context.id]: _removed, ...rest } = m
-          return rest
+          const newM = { ...m }
+          delete newM[context.id]
+          return newM
         })
       }
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] })
@@ -59,11 +68,11 @@ export default function AdminOrders() {
     },
   })
 
-  const orders = ordersData?.data || []
+  const orders = useMemo(() => ordersData?.data || [], [ordersData?.data])
 
   // Filter orders based on search and status
   const filteredOrders = useMemo(() => {
-    return orders.filter((order: any) => {
+    return orders.filter((order: Order) => {
       // Search filter
       const searchLower = searchQuery.toLowerCase()
       const matchesSearch = !searchQuery ||
@@ -206,7 +215,7 @@ export default function AdminOrders() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100/50 bg-white/30">
-              {paginatedOrders.map((order) => (
+              {paginatedOrders.map((order: Order) => (
                 <tr key={order.id} className="hover:bg-blue-50/30 transition-colors group">
                   <td className="px-8 py-5 whitespace-nowrap text-sm font-bold text-gray-900">
                     <span className="font-mono text-gray-500">#</span>{order.id.slice(0, 8)}
@@ -228,7 +237,7 @@ export default function AdminOrders() {
                     <div className="flex items-center gap-2">
                        <select
                         value={order.status}
-                        onChange={(e) => handleStatusChange(order.id, e.target.value as any)}
+                        onChange={(e) => handleStatusChange(order.id, e.target.value as Order['status'])}
                         className={`text-xs font-bold px-3 py-1.5 rounded-lg border-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 cursor-pointer shadow-sm transition-all ${getStatusColor(order.status)}`}
                         disabled={!!pendingById[order.id]}
                       >

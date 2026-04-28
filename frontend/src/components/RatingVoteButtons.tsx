@@ -53,13 +53,14 @@ export default function RatingVoteButtons({
       }
 
       await api.voteRating(ratingId, voteType);
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Revert on error
       setUserVote(previousVote);
       setUpvotes(previousUpvotes);
       setDownvotes(previousDownvotes);
       
-      const message = error.response?.data?.message || 'Failed to vote';
+      const err = error as { response?: { data?: { message?: string } } };
+      const message = err.response?.data?.message || 'Failed to vote';
       toast.error(message);
     } finally {
       setIsLoading(false);

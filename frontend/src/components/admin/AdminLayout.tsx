@@ -10,8 +10,7 @@ import {
   LogOut,
   Menu,
   X,
-  ChevronLeft,
-  MessageSquare,
+  ChevronLeft
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import Logo from '../Logo'

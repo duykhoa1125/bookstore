@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { api } from '../../lib/api'
+import type { Order, Book, BookAuthor } from '../../types'
 import { 
   DollarSign, 
   Users, 
@@ -90,7 +91,7 @@ export default function AdminDashboardOverview() {
   const recentOrders = recentOrdersResponse?.data || []
   const topSellingBooks = topSellingBooksResponse?.data || []
 
-  const totalStatusOrders = ordersStatusData.reduce((acc: number, curr: any) => acc + (curr.count || 0), 0)
+  const totalStatusOrders = ordersStatusData.reduce((acc: number, curr: { count?: number }) => acc + (curr.count || 0), 0)
 
   const statCards = [
     {
@@ -319,7 +320,7 @@ export default function AdminDashboardOverview() {
                     nameKey="status"
                     cornerRadius={6}
                   >
-                    {ordersStatusData.map((entry: any, index: number) => (
+                    {ordersStatusData.map((entry: { status: string; count: number }, index: number) => (
                       <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.status] || COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
@@ -337,7 +338,7 @@ export default function AdminDashboardOverview() {
                     verticalAlign="bottom" 
                     height={36}
                     iconType="circle"
-                    formatter={(value, entry: any) => {
+                    formatter={(value, entry: { payload?: { count?: number } }) => {
                       const { payload } = entry;
                       const percent = totalStatusOrders > 0 
                         ? ((payload.count / totalStatusOrders) * 100).toFixed(0) 
@@ -397,7 +398,7 @@ export default function AdminDashboardOverview() {
                     formatter={(value: number) => [`$${value.toFixed(2)}`, 'Total Sales']}
                   />
                   <Bar dataKey="totalSales" radius={[0, 8, 8, 0]} barSize={24}>
-                    {categoryData.slice(0, 8).map((_: any, index: number) => (
+                    {categoryData.slice(0, 8).map((_: unknown, index: number) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Bar>
@@ -424,7 +425,7 @@ export default function AdminDashboardOverview() {
           </div>
           <div className="space-y-4">
             {topCustomersData.length > 0 ? (
-              topCustomersData.map((customer: any, index: number) => (
+              topCustomersData.map((customer: { id: string; fullName: string; orderCount: number; totalSpent: number }, index: number) => (
                 <div key={customer.id} className="group flex items-center space-x-4 p-4 bg-white/50 rounded-2xl border border-white/50 hover:bg-white hover:shadow-md transition-all duration-300">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md ring-2 ring-white ${
                     index === 0 ? 'bg-gradient-to-br from-amber-400 to-orange-500' : 
@@ -474,7 +475,7 @@ export default function AdminDashboardOverview() {
               </thead>
               <tbody className="divide-y divide-gray-100/50 bg-white/30">
                 {recentOrders.length > 0 ? (
-                  recentOrders.map((order: any) => (
+                  recentOrders.map((order: Order) => (
                     <tr key={order.id} className="hover:bg-blue-50/30 transition-colors">
                       <td className="px-4 py-3 whitespace-nowrap text-sm font-bold text-gray-900">
                         #{order.id.substring(0, 8)}
@@ -519,7 +520,7 @@ export default function AdminDashboardOverview() {
           </div>
           <div className="p-6 space-y-6">
             {topSellingBooks.length > 0 ? (
-              topSellingBooks.map((book: any, index: number) => (
+              topSellingBooks.map((book: Book & { sold?: number }, index: number) => (
                 <div key={book.id} className="flex items-center space-x-4 group">
                   <div className="flex-shrink-0 relative">
                     <div className="absolute -top-2 -left-2 w-6 h-6 bg-gray-900 text-white rounded-full flex items-center justify-center text-xs font-bold shadow-md z-10 border-2 border-white">
@@ -540,7 +541,7 @@ export default function AdminDashboardOverview() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-gray-900 truncate leading-snug group-hover:text-blue-600 transition-colors">{book.title}</p>
                     <p className="text-xs text-gray-500 truncate mt-1">
-                      by {book.authors?.map((a: any) => a.author.name).join(', ')}
+                      by {book.authors?.map((a: BookAuthor) => a.author.name).join(', ')}
                     </p>
                   </div>
                   <div className="text-right">

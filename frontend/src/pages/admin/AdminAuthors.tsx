@@ -6,6 +6,7 @@ import toast from 'react-hot-toast'
 import Modal from '../../components/Modal'
 import ConfirmModal from '../../components/ConfirmModal'
 import Pagination from '../../components/Pagination'
+import type { Author } from '../../types'
 
 export default function AdminAuthors() {
   const queryClient = useQueryClient()
@@ -22,6 +23,11 @@ export default function AdminAuthors() {
     queryFn: () => api.getAuthors(),
   })
 
+  // Type guard for API errors
+  const isApiError = (error: unknown): error is { response?: { data?: { message?: string } } } => {
+    return typeof error === 'object' && error !== null && 'response' in error
+  }
+
   const createMutation = useMutation({
     mutationFn: (data: { name: string }) => api.createAuthor(data),
     onSuccess: () => {
@@ -30,8 +36,9 @@ export default function AdminAuthors() {
       setShowCreateModal(false)
       setName('')
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to create author')
+    onError: (error: unknown) => {
+      const message = isApiError(error) ? error.response?.data?.message : undefined
+      toast.error(message || 'Failed to create author')
     },
   })
 
@@ -44,8 +51,9 @@ export default function AdminAuthors() {
       setEditingAuthor(null)
       setName('')
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to update author')
+    onError: (error: unknown) => {
+      const message = isApiError(error) ? error.response?.data?.message : undefined
+      toast.error(message || 'Failed to update author')
     },
   })
 
@@ -56,18 +64,19 @@ export default function AdminAuthors() {
       toast.success('Author deleted successfully')
       setDeleteId(null)
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to delete author')
+    onError: (error: unknown) => {
+      const message = isApiError(error) ? error.response?.data?.message : undefined
+      toast.error(message || 'Failed to delete author')
     },
   })
 
-  const authors = authorsData?.data || []
+  const authors = useMemo(() => authorsData?.data || [], [authorsData?.data])
 
   // Filter authors based on search
   const filteredAuthors = useMemo(() => {
     if (!searchQuery) return authors
     const searchLower = searchQuery.toLowerCase()
-    return authors.filter((author: any) => 
+    return authors.filter((author: Author) => 
       author.name.toLowerCase().includes(searchLower)
     )
   }, [authors, searchQuery])
@@ -88,7 +97,7 @@ export default function AdminAuthors() {
     }
   }
 
-  const handleEdit = (author: any) => {
+  const handleEdit = (author: Author) => {
     setEditingAuthor({ id: author.id, name: author.name })
     setName(author.name)
     setShowCreateModal(true)
@@ -218,7 +227,7 @@ export default function AdminAuthors() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100/50 bg-white/30">
-                {paginatedAuthors.map((author) => (
+                {paginatedAuthors.map((author: Author) => (
                   <tr key={author.id} className="hover:bg-blue-50/30 transition-colors group">
                     <td className="px-8 py-5 whitespace-nowrap">
                       <div className="flex items-center">

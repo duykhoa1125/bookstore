@@ -7,6 +7,7 @@ import PaymentConfirmationModal from '../components/PaymentConfirmationModal'
 import toast from 'react-hot-toast'
 import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import type { CartItem, PaymentMethod } from '../types'
 
 export default function Cart() {
   const navigate = useNavigate()
@@ -46,10 +47,10 @@ export default function Cart() {
   // Select all items by default when cart loads
   useEffect(() => {
     if (cartData?.data?.items && selectedItems.size === 0) {
-      const allItemIds = new Set(cartData.data.items.map((item: any) => item.id))
+      const allItemIds = new Set(cartData.data.items.map((item: CartItem) => item.id))
       setSelectedItems(allItemIds)
     }
-  }, [cartData?.data?.items])
+  }, [cartData?.data?.items, selectedItems.size])
 
   const updateItemMutation = useMutation({
     mutationFn: ({ itemId, quantity }: { itemId: string; quantity: number }) =>
@@ -57,16 +58,16 @@ export default function Cart() {
     onMutate: async ({ itemId, quantity }) => {
       setPendingUpdates((c) => c + 1)
       await queryClient.cancelQueries({ queryKey: ['cart'] })
-      const previous = queryClient.getQueryData(['cart']) as any
+      const previous = queryClient.getQueryData(['cart']) as { data: { items: CartItem[]; total: number } } | undefined
 
-      queryClient.setQueryData(['cart'], (oldData: any) => {
+      queryClient.setQueryData(['cart'], (oldData: { data: { items: CartItem[]; total: number } } | undefined) => {
         if (!oldData?.data) return oldData
         const cart = { ...oldData.data }
-        const items = cart.items.map((it: any) =>
+        const items = cart.items.map((it: CartItem) =>
           it.id === itemId ? { ...it, quantity } : it
         )
         const total = items.reduce(
-          (sum: number, it: any) => sum + it.book.price * it.quantity,
+          (sum: number, it: CartItem) => sum + it.book.price * it.quantity,
           0
         )
         return { ...oldData, data: { ...cart, items, total } }
@@ -115,9 +116,12 @@ export default function Cart() {
         navigate(`/orders/${response.data.id}`)
       }
     },
-    onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || 'Failed to create order'
-      const errorDetails = error.response?.data?.errors
+    onError: (error: unknown) => {
+      const isApiError = (err: unknown): err is { response?: { data?: { message?: string; errors?: Record<string, string[]> } } } => {
+        return typeof err === 'object' && err !== null && 'response' in err;
+      }
+      const errorMessage = isApiError(error) ? error.response?.data?.message || 'Failed to create order' : 'Failed to create order'
+      const errorDetails = isApiError(error) ? error.response?.data?.errors : undefined
       
       // Handle specific error cases with better messages
       if (errorMessage.toLowerCase().includes('insufficient stock')) {
@@ -131,7 +135,7 @@ export default function Cart() {
       } else if (errorDetails) {
         // Show detailed validation errors
         const errorMessages = Object.values(errorDetails).flat()
-        errorMessages.forEach((msg: any) => toast.error(`⚠️ ${msg}`))
+        errorMessages.forEach((msg: unknown) => toast.error(`⚠️ ${String(msg)}`))
       } else {
         // Generic error with suggestion
         toast.error(`${errorMessage}. Please try again or contact support if the issue persists.`)
@@ -191,13 +195,13 @@ export default function Cart() {
     if (selectedItems.size === cart.items.length) {
       setSelectedItems(new Set())
     } else {
-      setSelectedItems(new Set(cart.items.map((item: any) => item.id)))
+      setSelectedItems(new Set(cart.items.map((item: CartItem) => item.id)))
     }
   }
 
   const selectedTotal = cart.items
-    .filter((item: any) => selectedItems.has(item.id))
-    .reduce((sum: number, item: any) => sum + item.book.price * item.quantity, 0)
+    .filter((item: CartItem) => selectedItems.has(item.id))
+    .reduce((sum: number, item: CartItem) => sum + item.book.price * item.quantity, 0)
 
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -277,7 +281,7 @@ export default function Cart() {
             </label>
           </div>
 
-          {cart.items.map((item: any) => (
+          {cart.items.map((item: CartItem) => (
             <div key={item.id} className={`group bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm border-2 transition-all duration-300 ${selectedItems.has(item.id) ? 'border-blue-200 bg-blue-50/30' : 'border-gray-100 hover:border-blue-100'} hover:shadow-lg relative overflow-hidden`}>
               <div className="flex gap-3 sm:gap-6">
                 {/* Custom Checkbox */}
@@ -550,9 +554,9 @@ export default function Cart() {
           confirmOrder()
           setShowConfirmationModal(false)
         }}
-        selectedItems={cart.items.filter((item: any) => selectedItems.has(item.id))}
+        selectedItems={cart.items.filter((item: CartItem) => selectedItems.has(item.id))}
         shippingAddress={shippingAddress}
-        paymentMethodName={paymentMethods.find((m: any) => m.id === selectedPaymentMethod)?.name || ''}
+        paymentMethodName={paymentMethods.find((m: PaymentMethod) => m.id === selectedPaymentMethod)?.name || ''}
         total={selectedTotal}
         isProcessing={createOrderMutation.isPending}
       />

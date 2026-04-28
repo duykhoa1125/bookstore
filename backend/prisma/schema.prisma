@@ -41,6 +41,7 @@ model PasswordResetToken {
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("password_reset_tokens")
 }
 
@@ -54,6 +55,7 @@ model Category {
   parentCategory   Category?  @relation("CategoryToCategory", fields: [parentCategoryId], references: [id])
   subCategories    Category[] @relation("CategoryToCategory")
 
+  @@index([parentCategoryId])
   @@map("categories")
 }
 
@@ -95,6 +97,9 @@ model Book {
   orderItems  OrderItem[]
   ratings     Rating[]
 
+  @@index([categoryId])
+  @@index([publisherId])
+  @@index([title])
   @@map("books")
 }
 
@@ -105,6 +110,7 @@ model BookAuthor {
   book     Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
 
   @@id([bookId, authorId])
+  @@index([authorId])
   @@map("book_authors")
 }
 
@@ -131,6 +137,7 @@ model CartItem {
   cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
 
   @@unique([cartId, bookId])
+  @@index([bookId])
   @@map("cart_items")
 }
 
@@ -149,6 +156,9 @@ model Order {
   user            User        @relation("UserOrders", fields: [userId], references: [id])
   payment         Payment?
 
+  @@index([userId])
+  @@index([status])
+  @@index([orderDate])
   @@map("orders")
 }
 
@@ -162,6 +172,8 @@ model OrderItem {
   book      Book     @relation(fields: [bookId], references: [id])
   order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
+  @@index([orderId])
+  @@index([bookId])
   @@map("order_items")
 }
 
@@ -187,6 +199,8 @@ model Payment {
   order           Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
   paymentMethod   PaymentMethod @relation(fields: [paymentMethodId], references: [id])
 
+  @@index([paymentMethodId])
+  @@index([status])
   @@map("payments")
 }
 
@@ -203,6 +217,8 @@ model Rating {
   user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, bookId])
+  @@index([bookId])
+  @@index([stars])
   @@map("ratings")
 }
 
@@ -216,6 +232,7 @@ model RatingVote {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([ratingId, userId])
+  @@index([userId])
   @@map("rating_votes")
 }
 

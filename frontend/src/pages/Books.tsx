@@ -8,6 +8,7 @@ import { BookGridSkeleton } from '../components/SkeletonLoaders'
 import Pagination from '../components/Pagination'
 import toast from 'react-hot-toast'
 import { useAuth } from '../contexts/AuthContext'
+import type { Book } from '../types'
 
 
 // Accordion Section Component
@@ -104,8 +105,12 @@ export default function Books() {
       queryClient.invalidateQueries({ queryKey: ['cart'] })
       toast.success('Book added to cart!')
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to add to cart')
+    onError: (error: unknown) => {
+      const isApiError = (err: unknown): err is { response?: { data?: { message?: string } } } => {
+        return typeof err === 'object' && err !== null && 'response' in err;
+      }
+      const message = isApiError(error) ? error.response?.data?.message : undefined;
+      toast.error(message || 'Failed to add to cart')
     },
   })
 
@@ -121,7 +126,7 @@ export default function Books() {
 
   // Filter & Sort Logic
   const filteredBooks = useMemo(() => {
-    let result = booksData?.data || []
+    let result: Book[] = booksData?.data || []
 
     // 1. Search
     if (searchTerm) {

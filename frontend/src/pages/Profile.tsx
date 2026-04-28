@@ -95,8 +95,9 @@ export default function Profile() {
       toast.success('Password changed successfully')
       setIsChangingPassword(false)
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to change password')
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || 'Failed to change password')
     } finally {
       setPasswordLoading(false)
     }

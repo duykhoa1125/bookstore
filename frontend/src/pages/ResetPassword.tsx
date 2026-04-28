@@ -43,7 +43,8 @@ export default function ResetPassword() {
       setSuccess(true)
       // Redirect to login after 3 seconds
       setTimeout(() => navigate('/login'), 3000)
-    } catch (err: any) {
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
       setError(err.response?.data?.message || 'Failed to reset password. The link may be expired or invalid.')
     } finally {
       setLoading(false)

@@ -7,6 +7,7 @@ import Pagination from '../../components/Pagination'
 import toast from 'react-hot-toast'
 import { Link } from 'react-router-dom'
 import { useState, useMemo } from 'react'
+import type { Book, Category, BookAuthor } from '../../types'
 
 export default function AdminBooks() {
   const queryClient = useQueryClient()
@@ -44,18 +45,18 @@ export default function AdminBooks() {
     },
   })
 
-  const books = booksData?.data || []
+  const books = useMemo(() => booksData?.data || [], [booksData?.data])
   const categories = categoriesData?.data || []
 
   // Filter books based on search and filters
   const filteredBooks = useMemo(() => {
     // Reset to page 1 when filters change (handled via dependency in useEffect below)
-    return books.filter((book: any) => {
+      return books.filter((book: Book) => {
       // Search filter
       const searchLower = searchQuery.toLowerCase()
       const matchesSearch = !searchQuery || 
         book.title.toLowerCase().includes(searchLower) ||
-        book.authors?.some((a: any) => a.author.name.toLowerCase().includes(searchLower))
+        book.authors?.some((a: BookAuthor) => a.author.name.toLowerCase().includes(searchLower))
 
       // Category filter
       const matchesCategory = selectedCategory === 'all' || book.category?.id === selectedCategory
@@ -142,7 +143,7 @@ export default function AdminBooks() {
                   className="w-full pl-4 pr-10 h-11 bg-white border border-gray-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all appearance-none cursor-pointer shadow-sm hover:shadow-md hover:border-gray-300"
                 >
                   <option value="all">All Categories</option>
-                  {categories.map((cat: any) => (
+                  {categories.map((cat: Category) => (
                     <option key={cat.id} value={cat.id}>{cat.name}</option>
                   ))}
                 </select>
@@ -183,7 +184,7 @@ export default function AdminBooks() {
           <div className="mt-4 flex items-center gap-2 text-xs text-gray-500 animate-in fade-in slide-in-from-top-1">
             <span>Filters active:</span>
             {searchQuery && <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded-lg border border-blue-100">Search: {searchQuery}</span>}
-            {selectedCategory !== 'all' && <span className="bg-purple-50 text-purple-700 px-2 py-1 rounded-lg border border-purple-100">Category: {categories.find((c: any) => c.id === selectedCategory)?.name}</span>}
+            {selectedCategory !== 'all' && <span className="bg-purple-50 text-purple-700 px-2 py-1 rounded-lg border border-purple-100">Category: {categories.find((c: Category) => c.id === selectedCategory)?.name}</span>}
             {stockFilter !== 'all' && <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded-lg border border-gray-200">Stock: {stockFilter}</span>}
             <button 
               onClick={() => {
@@ -215,7 +216,7 @@ export default function AdminBooks() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100/50 bg-white/30">
-                {paginatedBooks.map((book: any) => (
+                {paginatedBooks.map((book: Book) => (
                   <tr key={book.id} className="hover:bg-blue-50/30 transition-colors group">
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
@@ -238,7 +239,7 @@ export default function AdminBooks() {
                           </div>
                           {book.authors && book.authors.length > 0 && (
                             <div className="text-xs text-gray-500 font-medium truncate max-w-[200px] md:max-w-[300px]">
-                              {book.authors.map((a: any) => a.author.name).join(', ')}
+                              {book.authors.map((a: BookAuthor) => a.author.name).join(', ')}
                             </div>
                           )}
                         </div>
