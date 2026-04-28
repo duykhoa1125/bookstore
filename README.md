@@ -24,7 +24,7 @@ BookStore là một ứng dụng web full-stack cho phép người dùng duyệt
 ### 🔐 Xác thực & Phân quyền
 - Đăng ký / Đăng nhập bằng tài khoản hệ thống hoặc **Google OAuth 2.0**
 - Quên mật khẩu – gửi link đặt lại qua email (Resend)
-- Phân quyền hai vai trò: **User** (khách hàng) và **Admin** (quản trị viên)
+- Phân quyền hai vai trò: **User** và **Admin** (admin@bookstore.com / password123)
 - Bảo vệ route phía frontend (ProtectedRoute, AdminRoute) và xác thực JWT phía backend
 
 ### 🛒 Mua sắm & Thanh toán
