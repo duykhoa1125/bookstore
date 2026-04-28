@@ -1,15 +1,14 @@
 import { Link } from 'react-router-dom'
-import { Star, ShoppingCart, BookOpen, Eye } from 'lucide-react'
+import { Star, ShoppingCart, BookOpen } from 'lucide-react'
 import { Book } from '../types'
 
 interface BookCardProps {
   book: Book
   onAddToCart: (e: React.MouseEvent, bookId: string) => void
   isAddingToCart?: boolean
-  onQuickView?: (book: Book) => void
 }
 
-export function BookCard({ book, onAddToCart, isAddingToCart = false, onQuickView }: BookCardProps) {
+export function BookCard({ book, onAddToCart, isAddingToCart = false }: BookCardProps) {
   const averageRating = book.averageRating || 0
   const ratingCount = book.ratings?.length || 0
   // Show stars if there remains an average rating > 0, regardless of the explicit ratings array length
@@ -36,22 +35,6 @@ export function BookCard({ book, onAddToCart, isAddingToCart = false, onQuickVie
         {/* Overlay gradient */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         
-        {/* Quick View Button */}
-        {onQuickView && (
-          <button
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              onQuickView(book)
-            }}
-            className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 z-10"
-          >
-            <div className="px-3 py-2 bg-white/90 backdrop-blur-sm rounded-full flex items-center gap-1.5 shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 hover:bg-white hover:scale-105">
-              <Eye className="w-3.5 h-3.5 text-gray-700" />
-              <span className="text-xs font-semibold text-gray-700">Quick View</span>
-            </div>
-          </button>
-        )}
 
         {/* Badges */}
         <div className="absolute top-2 left-2 flex flex-col gap-1.5">

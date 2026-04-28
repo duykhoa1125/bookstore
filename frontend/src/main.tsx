@@ -5,8 +5,6 @@ import { GoogleOAuthProvider } from '@react-oauth/google'
 import { Toaster } from 'react-hot-toast'
 import App from './App.tsx'
 import { AuthProvider } from './contexts/AuthContext.tsx'
-import { BackendHealthProvider } from './contexts/BackendHealthContext.tsx'
-import ServerWakingScreen from './components/ServerWakingScreen.tsx'
 import './index.css'
 
 const queryClient = new QueryClient({
@@ -22,8 +20,6 @@ const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <BackendHealthProvider>
-      <ServerWakingScreen />
       <GoogleOAuthProvider clientId={googleClientId}>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
@@ -32,7 +28,6 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           </AuthProvider>
         </QueryClientProvider>
       </GoogleOAuthProvider>
-    </BackendHealthProvider>
   </React.StrictMode>,
 )
 
