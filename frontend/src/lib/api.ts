@@ -437,22 +437,6 @@ class ApiClient {
     return response.data;
   }
 
-  async deleteRating(id: string): Promise<ApiResponse<void>> {
-    const response = await this.client.delete(`/ratings/${id}`);
-    return response.data;
-  }
-
-  // Admin rating endpoints
-  async getAllRatings(): Promise<ApiResponse<Rating[]>> {
-    const response = await this.client.get("/ratings/all");
-    return response.data;
-  }
-
-  async deleteRatingAsAdmin(id: string): Promise<ApiResponse<void>> {
-    const response = await this.client.delete(`/ratings/admin/${id}`);
-    return response.data;
-  }
-
   // Rating vote endpoints
   async voteRating(
     ratingId: string,

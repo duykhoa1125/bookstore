@@ -28,7 +28,6 @@ import AdminAuthors from './pages/admin/AdminAuthors'
 import AdminPublishers from './pages/admin/AdminPublishers'
 import AdminPaymentMethods from './pages/admin/AdminPaymentMethods'
 import AdminUsers from './pages/admin/AdminUsers'
-import AdminReviews from './pages/admin/AdminReviews'
 import NotFound from './pages/NotFound'
 import PaymentSuccess from './pages/PaymentSuccess'
 
@@ -173,7 +172,6 @@ function App() {
           <Route path="publishers" element={<AdminPublishers />} />
           <Route path="payment-methods" element={<AdminPaymentMethods />} />
           <Route path="users" element={<AdminUsers />} />
-          <Route path="reviews" element={<AdminReviews />} />
         </Route>
         </Routes>
       </BrowserRouter>

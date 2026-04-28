@@ -162,32 +162,5 @@ export class RatingService {
     return rating;
   }
 
-  // Admin only methods
-  async findAll() {
-    const ratings = await prisma.rating.findMany({
-      include: {
-        user: { select: { fullName: true, email: true, avatar: true } },
-        book: { select: { title: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    });
-
-    // Add vote counts to each rating for admin view
-    const ratingsWithVotes = await Promise.all(
-      ratings.map((rating) => this.addVotesToRating(rating))
-    );
-
-    return ratingsWithVotes;
-  }
-
-  async deleteByAdmin(ratingId: string) {
-    const rating = await prisma.rating.findUnique({ where: { id: ratingId } });
-
-    if (!rating) {
-      throw new Error("Rating not found");
-    }
-
-    await prisma.rating.delete({ where: { id: ratingId } });
-    return { message: "Rating deleted successfully" };
   }
 }

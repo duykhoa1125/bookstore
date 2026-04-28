@@ -91,29 +91,6 @@ export class RatingController {
     }
   };
 
-  // Admin only methods
-  findAll = async (req: Request, res: Response) => {
-    try {
-      const ratings = await this.ratingService.findAll();
-      return ResponseUtil.success(
-        res,
-        ratings,
-        "All ratings fetched successfully"
-      );
-    } catch (error: any) {
-      return ResponseUtil.error(res, error.message);
-    }
-  };
-
-  deleteByAdmin = async (req: Request, res: Response) => {
-    try {
-      const result = await this.ratingService.deleteByAdmin(req.params.id);
-      return ResponseUtil.success(res, result);
-    } catch (error: any) {
-      return ResponseUtil.error(res, error.message);
-    }
-  };
-
   update = async (req: Request, res: Response) => {
     try {
       const rating = await this.ratingService.update(

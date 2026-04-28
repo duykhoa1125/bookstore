@@ -38,14 +38,5 @@ router.post("/:id/vote", ratingVoteController.voteRating);
 router.delete("/:id/vote", ratingVoteController.removeVote);
 router.get("/:id/vote", ratingVoteController.getUserVote);
 
-// Admin routes
-router.get("/all", AuthMiddleware.authorize("ADMIN"), ratingController.findAll);
-
-router.delete(
-  "/admin/:id",
-  AuthMiddleware.authorize("ADMIN"),
-  ratingController.deleteByAdmin
-);
-
 export default router;
 

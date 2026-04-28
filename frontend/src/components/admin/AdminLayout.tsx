@@ -44,7 +44,6 @@ export default function AdminLayout() {
     { id: 'orders', label: 'Orders', icon: ShoppingBag, path: '/admin/orders' },
     { id: 'books', label: 'Books', icon: BookOpen, path: '/admin/books' },
     { id: 'users', label: 'Users', icon: Users, path: '/admin/users' },
-    { id: 'reviews', label: 'Reviews', icon: MessageSquare, path: '/admin/reviews' },
     { id: 'categories', label: 'Categories', icon: FolderTree, path: '/admin/categories' },
     { id: 'authors', label: 'Authors', icon: Users, path: '/admin/authors' },
     { id: 'publishers', label: 'Publishers', icon: Building2, path: '/admin/publishers' },
