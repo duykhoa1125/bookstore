@@ -11,10 +11,10 @@ Originally developed as an academic software engineering project (HCMUT), it has
 **Role:** Backend Developer (with Full-stack contributions)
 
 While I contributed to the entire full-stack lifecycle, my primary focus was architecting and implementing the **Backend** services:
-- **Database Architecture:** Designed a scalable relational schema using **PostgreSQL** and managed migrations with **Prisma ORM** (handling 12 interconnected tables including Users, Orders, Payments, and Ratings).
+- **Database Architecture:** Designed a scalable relational schema using **PostgreSQL** and managed migrations with **Prisma ORM** (handling 12 interconnected tables including Users, Orders, and Ratings).
 - **RESTful API Development:** Built secure and efficient APIs using **Node.js, Express 5, and TypeScript** with a modular, domain-driven structure.
 - **Authentication & Security:** Implemented dual-auth flows using **JWT** and **Google OAuth 2.0**. Enforced security best practices using `Helmet`, password hashing with `bcryptjs`, and strict payload validation with `Zod`.
-- **Payment & Third-party Integrations:** Integrated **Cloudinary** for image uploads, and **Resend** for transactional emails (e.g., password resets).
+- **Third-party Integrations:** Integrated **Cloudinary** for image uploads, and **Resend** for transactional emails (e.g., password resets).
 - **Frontend Integration:** Contributed to the **React/TypeScript** frontend, specifically connecting `TanStack React Query` hooks to the backend APIs, resolving build issues, and building out key user and admin interfaces.
 
 ## 🛠 Technology Stack
@@ -24,7 +24,7 @@ While I contributed to the entire full-stack lifecycle, my primary focus was arc
 - **Language:** TypeScript
 - **Database & ORM:** PostgreSQL, Prisma ORM
 - **Security & Validation:** JWT, Zod, Helmet, bcryptjs
-- **Services:** Stripe API, PayPal SDK, Cloudinary (Images), Resend (Emails)
+- **Services:** Cloudinary (Images), Resend (Emails)
 
 ### Frontend
 - **Framework:** React 18 (Vite), TypeScript
@@ -39,7 +39,7 @@ While I contributed to the entire full-stack lifecycle, my primary focus was arc
 ![Customer View Placeholder](./assets/customer-view.png)
 - **Modern Hero Banner & Home Page:** Engaging landing page with a responsive, modern design.
 - **Advanced Catalog & Search:** Browse books with dynamic filtering by category, author, and publisher.
-- **Cart & Checkout Flow:** Seamless cart management with integrated Stripe/PayPal payment processing.
+- **Cart & Checkout Flow:** Seamless cart management with a straightforward checkout process.
 - **Order Tracking:** Track order status from `PENDING` to `DELIVERED`.
 - **Reviews & Ratings:** Customers can leave 1-5 star reviews and vote on others' reviews.
 - **User Profile:** Manage personal info, shipping addresses, and upload avatars.
@@ -48,7 +48,7 @@ While I contributed to the entire full-stack lifecycle, my primary focus was arc
 ![Admin Dashboard Placeholder](./assets/admin-dashboard.png)
 - **Analytics Dashboard:** Real-time revenue and sales statistics visualized with Recharts.
 - **Catalog Management:** Full CRUD capabilities for Books, Categories, Authors, and Publishers.
-- **Order Processing:** Update order statuses and track payment confirmations.
+- **Order Processing:** Update and manage order statuses.
 - **User Management:** Oversee registered accounts and their roles.
 
 ## 📂 Project Structure
@@ -60,7 +60,7 @@ bookstore/
 │   └── src/
 │       ├── config/         # Environment & Third-party configs
 │       ├── middleware/     # Auth, error handling, validation
-│       ├── modules/        # Domain-driven modules (auth, books, orders, payments, etc.)
+│       ├── modules/        # Domain-driven modules (auth, books, orders, etc.)
 │       └── utils/          # Helper functions
 │
 └── frontend/               # React & Vite Frontend
@@ -82,7 +82,7 @@ bookstore/
 ```bash
 cd backend
 npm install
-# Create a .env file with DATABASE_URL, JWT_SECRET, STRIPE_SECRET_KEY, etc.
+# Create a .env file with DATABASE_URL, JWT_SECRET, etc.
 npx prisma migrate dev      # Apply database migrations
 npm run prisma:seed         # Seed initial data
 npm run dev                 # Start development server
@@ -92,7 +92,7 @@ npm run dev                 # Start development server
 ```bash
 cd frontend
 npm install
-# Create a .env file with VITE_API_URL, VITE_STRIPE_PUBLIC_KEY, etc.
+# Create a .env file with VITE_API_URL, etc.
 npm run dev                 # Start Vite dev server
 ```
 
@@ -103,7 +103,6 @@ The backend uses a modular RESTful architecture:
 - `/api/books` - Product catalog and filtering
 - `/api/categories`, `/api/authors`, `/api/publishers` - Catalog metadata
 - `/api/orders` - Order placement and tracking
-- `/api/payments` - Stripe and PayPal processing
 - `/api/cart` - Cart state management
 - `/api/ratings` - User reviews
 - `/api/analytics` - Admin reporting endpoints
